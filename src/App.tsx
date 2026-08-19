@@ -83,7 +83,7 @@ function EntryPage() {
         const uniqueRandom = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
         const generatedBarcode = `890${Date.now().toString().slice(-6)}${uniqueRandom}`;
 
-        return fetch('http://localhost:3000/api/inventory/design', {
+        return fetch('https://lace-erp-backend.onrender.com/api/inventory/design', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -261,7 +261,7 @@ function BarcodeGeneratePage() {
   const fetchDesigns = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:3000/api/inventory/designs');
+      const response = await fetch('https://lace-erp-backend.onrender.com/api/inventory/designs');;
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to fetch designs');
       setDesigns(data.data);
@@ -441,7 +441,7 @@ function BarcodeScanPage() {
     setIsCameraOpen(false); // Instantly close camera UI
 
     try {
-      const response = await fetch('http://localhost:3000/api/inventory/scan', {
+      const response = await fetch('https://lace-erp-backend.onrender.com/api/inventory/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ barcode: codeToScan.trim(), type: txType, qty: Number(qty) })
@@ -579,7 +579,7 @@ function ReportPage() {
   const fetchLedger = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:3000/api/inventory/ledger');
+      const response = await fetch('https://lace-erp-backend.onrender.com/api/inventory/ledger');
       const data = await response.json();
       
       if (!response.ok) throw new Error(data.message || 'Failed to fetch data');

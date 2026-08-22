@@ -1,5 +1,4 @@
 import { useState, useEffect, type FormEvent } from 'react';
-
 export default function LaceInventoryDashboard() {
   const [scanInput, setScanInput] = useState('');
   const [scannedDesign, setScannedDesign] = useState<any>(null);

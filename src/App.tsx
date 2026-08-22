@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
-import StockReportPage from './pages/StockReportPage';
 import LaceInventoryDashboard from './components/LaceInventoryDashboard';
 import EntryPage from './components/EntryPage';
 import BarcodeGeneratePage from './components/BarcodeGeneratePage';
+import StockReportPage from './components/StockReportPage'; // 1. ADDED IMPORT
 
 function Navbar() {
   return (
@@ -31,7 +31,8 @@ export default function App() {
             <Route path="/" element={<LaceInventoryDashboard />} />
             <Route path="/entry" element={<EntryPage />} />
             <Route path="/labels" element={<BarcodeGeneratePage />} />
-            <Route path="/report" element={<StockReportPage />} />
+            {/* 2. ADDED THE ROUTE TO MATCH THE NAVBAR LINK */}
+            <Route path="/report" element={<StockReportPage />} /> 
           </Routes>
         </main>
       </div>

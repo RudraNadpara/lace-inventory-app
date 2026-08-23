@@ -12,16 +12,13 @@ export default function BarcodeGeneratePage() {
   }, []);
 
   return (
-    <div>
-      <div className="screen-heading">
-        <h2>Master Design Labels</h2>
-        <p>Scan-ready QR labels for every registered design.</p>
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+    <div className="p-4">
+      <h2 className="text-xl font-bold mb-4">Master Design Labels</h2>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {designs.map(design => (
-          <div key={design.Barcode} className="mobile-panel p-3 sm:p-4 flex flex-col items-center">
+          <div key={design.Barcode} className="border p-4 flex flex-col items-center bg-white rounded shadow">
             <QRCode value={design.Barcode} size={120} />
-            <span className="font-bold mt-3 text-base sm:text-lg">{design.DesignNo}</span>
+            <span className="font-bold mt-3 text-lg">{design.DesignNo}</span>
             <span className="text-gray-600">₹{design.Price}</span>
           </div>
         ))}

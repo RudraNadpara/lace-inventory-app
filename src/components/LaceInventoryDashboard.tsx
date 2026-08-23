@@ -109,17 +109,16 @@ export default function LaceInventoryDashboard() {
   };
 
   return (
-    <div>
-      <header className="screen-heading">
-        <h1>Godown Inventory Control</h1>
-        <p>Scan a design barcode to add or deduct packets.</p>
+    <div className="min-h-screen bg-gray-100 p-6">
+      <header className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Godown Inventory Control</h1>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* SCANNER ENTRY PANEL */}
-        <div className="mobile-panel p-4 sm:p-6 lg:col-span-1">
-          <h2 className="text-lg font-semibold mb-4 border-b border-gray-100 pb-3">1. Scan Barcode</h2>
+        <div className="bg-white p-6 rounded-lg shadow lg:col-span-1">
+          <h2 className="text-lg font-semibold mb-4 border-b pb-2">1. Scan Barcode</h2>
           
           <form onSubmit={handleBarcodeScan} className="flex gap-2 mb-6">
             <input 
@@ -128,16 +127,16 @@ export default function LaceInventoryDashboard() {
               onChange={(e) => setScanInput(e.target.value)} 
               autoFocus 
               placeholder="Scan design barcode..."
-              className="mobile-input text-lg bg-[#eef8f0]"
+              className="w-full border rounded p-2 text-lg focus:ring-2 focus:ring-blue-500 bg-blue-50"
             />
-            <button type="submit" className="bg-[#17211f] text-white font-bold px-4 rounded-lg min-h-12">
+            <button type="submit" className="bg-gray-800 text-white font-bold py-2 px-4 rounded">
               Search
             </button>
           </form>
 
           {/* COLOR AND QTY POPUP AREA (Only shows after successful scan) */}
           {scannedDesign && (
-            <div className="bg-[#eef8f0] p-4 rounded-xl border border-[#cde5d3]">
+            <div className="bg-blue-50 p-4 rounded border border-blue-200">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold text-lg">{scannedDesign.designNo}</h3>
                 <span className="bg-white px-2 py-1 rounded text-sm shadow">₹{scannedDesign.price}</span>
@@ -188,7 +187,7 @@ export default function LaceInventoryDashboard() {
                   />
                 </div>
                 
-                <button type="submit" className="w-full primary-action px-4 transition">
+                <button type="submit" className="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition">
                   Process Transaction
                 </button>
               </form>
@@ -203,11 +202,11 @@ export default function LaceInventoryDashboard() {
         </div>
 
         {/* LEDGER DATA GRID */}
-        <div className="mobile-panel p-4 sm:p-6 lg:col-span-2">
-          <h2 className="text-lg font-semibold mb-4 border-b border-gray-100 pb-3">Live Ledger & Corrections</h2>
+        <div className="bg-white p-6 rounded-lg shadow lg:col-span-2">
+          <h2 className="text-lg font-semibold mb-4 border-b pb-2">Live Ledger & Corrections</h2>
           
           <div className="overflow-x-auto max-h-[600px]">
-            <table className="w-full min-w-[650px] text-left border-collapse">
+            <table className="w-full text-left border-collapse">
               <thead className="sticky top-0 bg-white">
                 <tr className="bg-gray-50 text-gray-600 text-sm">
                   <th className="p-3 border-b">ID</th>

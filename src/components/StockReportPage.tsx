@@ -21,10 +21,13 @@ export default function StockReportPage() {
   const totalValue = reportData.reduce((sum, item) => sum + (Number(item.currentStock) * Number(item.price)), 0);
 
   return (
-    <div>
-      <div className="screen-heading flex justify-between items-start gap-4 flex-wrap">
-        <div><h2>Live Stock Analytics</h2><p>Real-time godown inventory balances</p></div>
-        <div className="bg-[#17211f] text-white px-4 py-3 rounded-xl shadow-sm">
+    <div className="p-6">
+      <div className="flex justify-between items-end mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Live Stock Analytics</h2>
+          <p className="text-gray-500">Real-time godown inventory balances</p>
+        </div>
+        <div className="bg-blue-900 text-white p-4 rounded-lg shadow">
           <p className="text-sm uppercase tracking-wider opacity-80">Total Inventory Value</p>
           <p className="text-2xl font-bold">₹{totalValue.toLocaleString('en-IN')}</p>
         </div>
@@ -33,9 +36,8 @@ export default function StockReportPage() {
       {loading ? (
         <p>Loading report data...</p>
       ) : (
-        <div className="mobile-panel overflow-hidden">
-          <div className="overflow-x-auto">
-          <table className="w-full min-w-[650px] text-left border-collapse">
+        <div className="bg-white rounded-lg shadow overflow-hidden">
+          <table className="w-full text-left border-collapse">
             <thead className="bg-gray-100 text-gray-700 uppercase text-xs font-bold">
               <tr>
                 <th className="p-4 border-b">Design No</th>
@@ -66,7 +68,6 @@ export default function StockReportPage() {
               )}
             </tbody>
           </table>
-          </div>
         </div>
       )}
     </div>

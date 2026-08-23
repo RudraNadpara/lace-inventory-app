@@ -35,53 +35,38 @@ export default function EntryPage() {
   };
 
   return (
-    <div className="mobile-screen">
-      <div className="screen-heading">
-        <h2>Add New Master Design</h2>
-        <p>Create a design once, then track every color from the scanner.</p>
-      </div>
-      <form onSubmit={handleSubmit} className="mobile-panel p-5 sm:p-6 flex flex-col gap-5">
-        <label>
-          <span className="mobile-label">Design number</span>
-          <input 
+    <div className="p-4 max-w-md mx-auto">
+      <h2 className="text-xl font-bold mb-4">Add New Master Design</h2>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <input 
           placeholder="Design No (e.g., A101)" 
           value={designNo} 
           onChange={e => setDesignNo(e.target.value)} 
           required 
-          className="mobile-input" 
-          />
-        </label>
-        <label>
-          <span className="mobile-label">Price per packet</span>
-          <input 
+          className="border p-2 rounded" 
+        />
+        <input 
           placeholder="Price (₹)" 
           type="number" 
           value={price} 
           onChange={e => setPrice(e.target.value)} 
           required 
-          className="mobile-input" 
-          />
-        </label>
-        <label>
-          <span className="mobile-label">Available colors</span>
-          <input 
+          className="border p-2 rounded" 
+        />
+        <input 
           placeholder="Colors (comma separated, e.g., Red, Blue)" 
           value={colors} 
           onChange={e => setColors(e.target.value)} 
           required 
-          className="mobile-input" 
-          />
-        </label>
-        <label>
-          <span className="mobile-label">Image URL <span className="font-normal text-gray-400">(optional)</span></span>
-          <input 
+          className="border p-2 rounded" 
+        />
+        <input 
           placeholder="Image URL (Optional)" 
           value={imageUrl} 
           onChange={e => setImageUrl(e.target.value)} 
-          className="mobile-input" 
-          />
-        </label>
-        <button type="submit" className="primary-action mt-1">
+          className="border p-2 rounded" 
+        />
+        <button type="submit" className="bg-blue-600 text-white p-2 rounded font-bold">
           Save Design
         </button>
       </form>

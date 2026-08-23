@@ -1,66 +1,45 @@
-//import { useState, type FormEvent, type ChangeEvent } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { useState, useEffect, type FormEvent, type ChangeEvent } from 'react';
 import { PlusCircle, Printer, Maximize, FileText, ScanLine, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 
-// --- PAGE 1: ENTRY PAGE (Auto-Barcode & Unit Dropdown) ---
+const API_URL = 'https://lace-erp-backend.onrender.com/api/inventory';
+
+// --- PAGE 1: ENTRY PAGE ---
 function EntryPage() {
-  const [formData, setFormData] = useState({ 
-    designNo: '', 
-    color: '', 
-    sizeValue: '', 
-    sizeUnit: 'm', // Default unit
-    price: '' 
-  });
-  
+  const [formData, setFormData] = useState({ designNo: '', colors: '', price: '', imageUrl: '' });
   const [status, setStatus] = useState<{ message: string; isError: boolean } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!formData.designNo) {
-      setStatus({ message: 'Error: Design No is required.', isError: true });
-      return;
-    }
+    if (!formData.designNo) return;
 
     setIsLoading(true);
     setStatus(null);
 
-    // 1. Silently auto-generate the barcode right as they hit submit
-    const generatedBarcode = `890${Date.now().toString().slice(-10)}`;
-    
-    // 2. Combine the size value and unit (e.g., "2" + "inch" = "2 inch")
-    const combinedSize = formData.sizeValue ? `${formData.sizeValue} ${formData.sizeUnit}` : '';
+    const colorArray = formData.colors.split(',').map(c => c.trim()).filter(c => c);
 
     try {
-      const response = await fetch('http://localhost:3000/api/inventory/design', {
+      const response = await fetch(`${API_URL}/design`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           designNo: formData.designNo.trim(),
-          color: formData.color.trim(),
-          size: combinedSize,
+          colors: colorArray,
           price: Number(formData.price) || 0,
-          barcode: generatedBarcode // Send the hidden generated barcode
+          imageUrl: formData.imageUrl.trim()
         })
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to save design');
-      }
+      if (!response.ok) throw new Error('Failed to save design');
 
       if (navigator.vibrate) navigator.vibrate(100);
-
-      setStatus({ message: `Success: ${formData.designNo} added to Master!`, isError: false });
-      
-      // Reset form (keep the default unit as 'm')
-      setFormData({ designNo: '', color: '', sizeValue: '', sizeUnit: 'm', price: '' }); 
+      setStatus({ message: `Success: ${formData.designNo} Master Saved!`, isError: false });
+      setFormData({ designNo: '', colors: '', price: '', imageUrl: '' }); 
       setTimeout(() => setStatus(null), 3000);
 
     } catch (error: any) {
@@ -74,7 +53,6 @@ function EntryPage() {
 
   return (
     <div className="p-5 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-500 relative h-full">
-      
       {status && (
         <div className="absolute top-5 left-5 right-5 z-50 animate-in slide-in-from-top-10 fade-in duration-300">
           <div className={`p-4 rounded-2xl shadow-xl border backdrop-blur-md font-bold text-sm flex items-center justify-center ${status.isError ? 'bg-red-500/90 text-white border-red-600' : 'bg-emerald-500/90 text-white border-emerald-600'}`}>
@@ -84,12 +62,11 @@ function EntryPage() {
       )}
 
       <div className="mb-6">
-        <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">New Design</h2>
-        <p className="text-slate-500 text-sm">Add a new lace master record.</p>
+        <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">New Catalog Entry</h2>
+        <p className="text-slate-500 text-sm">Add a master design and its variants.</p>
       </div>
       
       <form onSubmit={handleSubmit} className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 space-y-5 relative">
-        
         {isLoading && (
           <div className="absolute inset-0 bg-white/60 backdrop-blur-sm rounded-3xl flex items-center justify-center z-10">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
@@ -97,84 +74,46 @@ function EntryPage() {
         )}
 
         <div>
-          <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Design No</label>
-          <input type="text" name="designNo" value={formData.designNo} onChange={handleChange} placeholder="e.g., LACE-105" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all" required />
+          <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Master Design No</label>
+          <input type="text" name="designNo" value={formData.designNo} onChange={handleChange} placeholder="e.g., LACE-503" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all" required />
         </div>
 
         <div>
-          <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Color</label>
-          <input type="text" name="color" value={formData.color} onChange={handleChange} placeholder="e.g., Red" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all" />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-             {/* NUMBER INPUT FOR SIZE */}
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Size / Length</label>
-            <input type="number" name="sizeValue" value={formData.sizeValue} onChange={handleChange} placeholder="e.g., 2.5" step="0.01" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all" />
-          </div>
-          <div>
-            {/* DROPDOWN FOR UNIT */}
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Unit</label>
-            <div className="relative">
-              <select name="sizeUnit" value={formData.sizeUnit} onChange={handleChange} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all appearance-none cursor-pointer font-medium">
-                <option value="m">Meter (m)</option>
-                <option value="cm">Centimeter (cm)</option>
-                <option value="inch">Inch</option>
-              </select>
-              {/* Custom dropdown arrow */}
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                ▼
-              </div>
-            </div>
-          </div>
+          <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Colors (Comma Separated)</label>
+          <input type="text" name="colors" value={formData.colors} onChange={handleChange} placeholder="e.g., Pink, Red, Yellow" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all" required />
         </div>
 
         <div>
           <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Price (₹)</label>
-          <input type="number" name="price" value={formData.price} onChange={handleChange} placeholder="0.00" step="0.01" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all" />
+          <input type="number" name="price" value={formData.price} onChange={handleChange} placeholder="0.00" step="0.01" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all" required/>
         </div>
 
         <button type="submit" disabled={isLoading} className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 active:scale-[0.98] text-white font-bold py-4 rounded-xl shadow-md shadow-indigo-200 transition-all mt-4">
-          {isLoading ? 'Saving...' : 'Save Design Master'}
+          {isLoading ? 'Saving...' : 'Save Entire Catalog Entry'}
         </button>
       </form>
     </div>
   );
 }
 
-// --- PAGE 2: BARCODE GENERATE PAGE (API Connected) ---
+// --- PAGE 2: PRINT LABELS ---
 function BarcodeGeneratePage() {
   const [designs, setDesigns] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
 
-  useEffect(() => {
-    fetchDesigns();
-  }, []);
+  useEffect(() => { fetchDesigns(); }, []);
 
   const fetchDesigns = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:3000/api/inventory/designs');
+      const response = await fetch(`${API_URL}/designs`);
       const data = await response.json();
-      
-      if (!response.ok) throw new Error(data.message || 'Failed to fetch designs');
-      
-      setDesigns(data.data);
-    } catch (err: any) {
-      setError(err.message);
+      setDesigns(data);
+    } catch (err) {
+      console.error(err);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handlePrint = (designNo: string) => {
-    // Log the specific design number being printed
-    console.log(`Sending design ${designNo} to printer...`);
-    
-    // In a real production app, this would send a command to a Bluetooth zebra printer.
-    if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
-    window.print();
   };
 
   return (
@@ -184,50 +123,27 @@ function BarcodeGeneratePage() {
           <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Print Labels</h2>
           <p className="text-slate-500 text-sm">Generate stickers for the floor.</p>
         </div>
-        <button 
-          onClick={fetchDesigns} 
-          className="p-2 bg-indigo-50 text-indigo-600 rounded-xl active:scale-95 transition-transform"
-        >
+        <button onClick={fetchDesigns} className="p-2 bg-indigo-50 text-indigo-600 rounded-xl active:scale-95 transition-transform">
           <span className="text-xs font-bold px-2">Refresh</span>
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-4 scrollbar-hide relative">
-        
         {isLoading && (
           <div className="absolute inset-0 bg-slate-50/80 backdrop-blur-sm flex items-center justify-center z-10">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
           </div>
         )}
-
-        {error && (
-          <div className="p-5 text-center text-red-500 font-medium bg-red-50 rounded-xl">
-            {error}
-          </div>
-        )}
-
-        {designs.length === 0 && !isLoading && !error && (
-          <div className="p-8 text-center text-slate-400 font-medium bg-white rounded-2xl border border-slate-100">
-            No designs found. Go to Entry to add some!
-          </div>
-        )}
-
         {designs.map((item, idx) => (
-          <div key={idx} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center relative overflow-hidden transition-all hover:shadow-md">
+          <div key={idx} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center relative overflow-hidden">
             <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-500"></div>
             <div className="pl-2">
               <p className="font-bold text-slate-800 text-lg">{item.DesignNo}</p>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">
-                {item.Color} {item.Size ? `• ${item.Size}` : ''}
-              </p>
-              <p className="text-sm font-mono text-slate-600 bg-slate-100 px-2 py-0.5 rounded inline-block">
+              <p className="text-sm font-mono text-slate-600 bg-slate-100 px-2 py-0.5 mt-1 rounded inline-block">
                 {item.Barcode}
               </p>
             </div>
-            <button 
-              onClick={() => handlePrint(item.DesignNo)}
-              className="bg-slate-800 active:bg-slate-900 active:scale-95 text-white p-3 rounded-xl shadow-md transition-all flex items-center justify-center"
-            >
+            <button className="bg-slate-800 active:bg-slate-900 active:scale-95 text-white p-3 rounded-xl shadow-md transition-all">
               <Printer size={20} />
             </button>
           </div>
@@ -237,58 +153,49 @@ function BarcodeGeneratePage() {
   );
 }
 
-// --- PAGE 3: BARCODE SCAN PAGE (Connected to API) ---
+// --- PAGE 3: SCAN INVENTORY ---
 function BarcodeScanPage() {
   const [txType, setTxType] = useState<'INWARD' | 'OUTWARD'>('INWARD');
   const [qty, setQty] = useState<number>(1);
   const [barcode, setBarcode] = useState<string>('');
+  const [scannedDesign, setScannedDesign] = useState<any>(null);
+  const [selectedColor, setSelectedColor] = useState('');
   const [status, setStatus] = useState<{ message: string; isError: boolean } | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
 
-  const handleScanSubmit = async (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Hardware scanners automatically press "Enter" after typing the barcode
+  // Step 1: Find Master Design
+  const handleSearch = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && barcode.trim() !== '') {
-      setIsLoading(true);
-      setStatus(null);
-
       try {
-        const response = await fetch('http://localhost:3000/api/inventory/scan', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ barcode: barcode.trim(), type: txType, qty: Number(qty) })
-        });
-
-        // 1. Read as text first so an empty response doesn't crash the JSON parser
-        const textData = await response.text();
-        
-        let data;
-        try {
-          data = textData ? JSON.parse(textData) : {};
-        } catch (parseError) {
-          throw new Error('Server dropped the connection or returned invalid data.');
-        }
-
-        // 2. Check if the server explicitly returned an error status
-        if (!response.ok) {
-          throw new Error(data.message || 'Transaction failed');
-        }
-
-        const newStock = data.data.NewTotalStock;
-        
-        if (navigator.vibrate) navigator.vibrate(100); 
-        
-        setStatus({ message: `Success: ${data.data.DesignNo} now at ${newStock}m`, isError: false });
-        setQty(1);
+        const res = await fetch(`${API_URL}/scan/${barcode}`);
+        if (!res.ok) throw new Error('Barcode not found');
+        const data = await res.json();
+        setScannedDesign({ ...data, barcode });
+        setSelectedColor(data.colorStock[0]?.color || '');
+      } catch (error) {
+        setStatus({ message: 'Barcode not found in master.', isError: true });
         setBarcode('');
-        
-        setTimeout(() => setStatus(null), 3000);
-        
-      } catch (error: any) {
-        setStatus({ message: error.message, isError: true });
-        setBarcode(''); // Clear the bad barcode so they can try again
-      } finally {
-        setIsLoading(false);
       }
+    }
+  };
+
+  // Step 2: Submit Transaction
+  const handleTransaction = async () => {
+    if (!scannedDesign || !selectedColor) return;
+    try {
+      const res = await fetch(`${API_URL}/scan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ barcode: scannedDesign.barcode, color: selectedColor, type: txType, qty: Number(qty) })
+      });
+      if (res.ok) {
+        if (navigator.vibrate) navigator.vibrate(100); 
+        setStatus({ message: `Success: Logged ${qty} pkt of ${scannedDesign.designNo} (${selectedColor})`, isError: false });
+        setScannedDesign(null);
+        setBarcode('');
+        setQty(1);
+      }
+    } catch (error) {
+      setStatus({ message: 'Network error.', isError: true });
     }
   };
 
@@ -302,48 +209,52 @@ function BarcodeScanPage() {
         <p className="text-slate-500 text-sm">Update live stock instantly.</p>
       </div>
 
-      {/* Segmented Control */}
       <div className="flex p-1 bg-slate-200 rounded-2xl mb-6 shadow-inner">
-        <button 
-          onClick={() => setTxType('INWARD')}
-          className={`flex-1 flex justify-center items-center gap-2 py-3 rounded-xl font-bold text-sm transition-all ${txType === 'INWARD' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'}`}
-        >
+        <button onClick={() => setTxType('INWARD')} className={`flex-1 flex justify-center items-center gap-2 py-3 rounded-xl font-bold text-sm transition-all ${txType === 'INWARD' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'}`}>
           <ArrowDownToLine size={18} /> INWARD
         </button>
-        <button 
-          onClick={() => setTxType('OUTWARD')}
-          className={`flex-1 flex justify-center items-center gap-2 py-3 rounded-xl font-bold text-sm transition-all ${txType === 'OUTWARD' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500'}`}
-        >
+        <button onClick={() => setTxType('OUTWARD')} className={`flex-1 flex justify-center items-center gap-2 py-3 rounded-xl font-bold text-sm transition-all ${txType === 'OUTWARD' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500'}`}>
           <ArrowUpFromLine size={18} /> OUTWARD
         </button>
       </div>
 
-      <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 relative">
-        {isLoading && (
-          <div className="absolute inset-0 bg-white/60 backdrop-blur-sm rounded-3xl flex items-center justify-center z-10">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      <div className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100">
+        {!scannedDesign ? (
+          <>
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 text-center">Ready to Scan Master Barcode</label>
+            <input type="text" value={barcode} onChange={(e) => setBarcode(e.target.value)} onKeyDown={handleSearch} placeholder="Tap here & scan..." className="w-full border-2 border-indigo-200 bg-indigo-50/50 rounded-2xl p-5 text-center text-lg font-medium text-indigo-900 placeholder-indigo-300 focus:border-indigo-500 outline-none" autoFocus />
+          </>
+        ) : (
+          <div className="space-y-4 animate-in fade-in">
+             <div className="text-center border-b pb-4">
+                <h3 className="text-xl font-bold text-slate-800">{scannedDesign.designNo}</h3>
+                <div className="flex justify-center gap-2 mt-2">
+                  {scannedDesign.colorStock.map((cs: any) => (
+                    <span key={cs.color} className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md border">{cs.color}: <b>{cs.stock}</b></span>
+                  ))}
+                </div>
+             </div>
+             
+             <div>
+               <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 text-center">Select Color Variant</label>
+               <select value={selectedColor} onChange={e => setSelectedColor(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-800 font-bold focus:ring-2 focus:ring-indigo-500 outline-none text-center">
+                 {scannedDesign.colorStock.map((cs: any) => (
+                   <option key={cs.color} value={cs.color}>{cs.color}</option>
+                 ))}
+               </select>
+             </div>
+
+             <div>
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 text-center">Packet Multiplier</label>
+                <input type="number" value={qty} onChange={(e) => setQty(Number(e.target.value))} min="1" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-center text-2xl font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none" />
+             </div>
+
+             <button onClick={handleTransaction} className="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl shadow-md active:scale-95 transition-all">
+                Submit Transaction
+             </button>
+             <button onClick={() => setScannedDesign(null)} className="w-full text-slate-400 text-sm font-bold mt-2">Cancel</button>
           </div>
         )}
-
-        <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 text-center">Quantity Multiplier</label>
-        <input 
-          type="number" 
-          value={qty}
-          onChange={(e) => setQty(Number(e.target.value))}
-          min="1"
-          className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6 text-center text-2xl font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none" 
-        />
-        
-        <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 text-center">Ready to Scan</label>
-        <input 
-          type="text" 
-          value={barcode}
-          onChange={(e) => setBarcode(e.target.value)}
-          onKeyDown={handleScanSubmit}
-          placeholder="Tap here & scan..." 
-          className="w-full border-2 border-indigo-200 bg-indigo-50/50 rounded-2xl p-5 text-center text-lg font-medium text-indigo-900 placeholder-indigo-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all" 
-          autoFocus 
-        />
       </div>
 
       {status && (
@@ -355,28 +266,21 @@ function BarcodeScanPage() {
   );
 }
 
-// --- PAGE 4: REPORT/GRID PAGE (API Connected) ---
+// --- PAGE 4: LIVE LEDGER ---
 function ReportPage() {
-  const [ledgerData, setLedgerData] = useState<any[]>([]);
+  const [reportData, setReportData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
 
-  // Fetch data when the page loads
-  useEffect(() => {
-    fetchLedger();
-  }, []);
+  useEffect(() => { fetchReport(); }, []);
 
-  const fetchLedger = async () => {
+  const fetchReport = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:3000/api/inventory/ledger');
+      const response = await fetch(`${API_URL}/report`);
       const data = await response.json();
-      
-      if (!response.ok) throw new Error(data.message || 'Failed to fetch data');
-      
-      setLedgerData(data.data);
-    } catch (err: any) {
-      setError(err.message);
+      setReportData(data);
+    } catch (err) {
+      console.error(err);
     } finally {
       setIsLoading(false);
     }
@@ -387,72 +291,41 @@ function ReportPage() {
       <div className="mb-6 flex justify-between items-end">
         <div>
           <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Live Ledger</h2>
-          <p className="text-slate-500 text-sm">Real-time godown availability.</p>
+          <p className="text-slate-500 text-sm">Real-time catalog availability.</p>
         </div>
-        <button 
-          onClick={fetchLedger} 
-          className="p-2 bg-indigo-50 text-indigo-600 rounded-xl active:scale-95 transition-transform"
-        >
-          {/* A simple reload icon using lucide-react could go here, for now it's just text */}
+        <button onClick={fetchReport} className="p-2 bg-indigo-50 text-indigo-600 rounded-xl active:scale-95 transition-transform">
           <span className="text-xs font-bold px-2">Refresh</span>
         </button>
       </div>
 
       <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex-1 relative">
-        
-        {/* Loading State */}
         {isLoading && (
           <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
           </div>
         )}
-
-        {/* Error State */}
-        {error && (
-          <div className="p-5 text-center text-red-500 font-medium bg-red-50 m-4 rounded-xl">
-            {error}
-          </div>
-        )}
-
-        {/* Data Table */}
         <div className="overflow-y-auto h-full scrollbar-hide">
           <table className="w-full text-left text-sm relative">
             <thead className="bg-slate-50/90 backdrop-blur-md border-b border-slate-100 sticky top-0 z-0">
               <tr>
-                <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Design</th>
+                <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Variant</th>
                 <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Stock</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              
-              {ledgerData.length === 0 && !isLoading && !error && (
-                <tr>
-                  <td colSpan={2} className="p-8 text-center text-slate-400 font-medium">
-                    No designs found in database.
-                  </td>
-                </tr>
-              )}
-
-              {ledgerData.map((item, idx) => (
+              {reportData.map((item, idx) => (
                 <tr key={idx} className="hover:bg-slate-50 transition-colors">
                   <td className="p-4">
-                    <p className="font-bold text-slate-800">{item.DesignNo}</p>
-                    <p className="text-xs text-slate-400">
-                      {item.Color} {item.Size ? `• ${item.Size}` : ''}
-                    </p>
+                    <p className="font-bold text-slate-800">{item.designNo}</p>
+                    <p className="text-xs text-slate-400">{item.color} • ₹{item.price}</p>
                   </td>
                   <td className="p-4 text-right">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
-                      Number(item.LiveStock) > 0 
-                        ? 'bg-emerald-100 text-emerald-700' 
-                        : 'bg-rose-100 text-rose-700'
-                    }`}>
-                      {Number(item.LiveStock)} m
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${Number(item.currentStock) > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                      {item.currentStock} pkt
                     </span>
                   </td>
                 </tr>
               ))}
-
             </tbody>
           </table>
         </div>
@@ -461,7 +334,7 @@ function ReportPage() {
   );
 }
 
-// --- MOBILE NAVIGATION BAR ---
+// --- MOBILE BOTTOM NAVIGATION ---
 function BottomNav() {
   const location = useLocation();
   const navItems = [
@@ -490,7 +363,7 @@ function BottomNav() {
   );
 }
 
-// --- MAIN APP COMPONENT ---
+// --- MAIN APP WRAPPER ---
 export default function App() {
   return (
     <BrowserRouter>

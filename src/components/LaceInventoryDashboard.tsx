@@ -1,4 +1,5 @@
 import { useState, useEffect, type FormEvent } from 'react';
+
 export default function LaceInventoryDashboard() {
   const [scanInput, setScanInput] = useState('');
   const [scannedDesign, setScannedDesign] = useState<any>(null);
@@ -11,7 +12,6 @@ export default function LaceInventoryDashboard() {
 
   const API_URL = 'https://lace-erp-backend.onrender.com/api/inventory';
 
-  // Fetch the live ledger history on load
   useEffect(() => {
     fetchLedger();
   }, []);
@@ -28,8 +28,8 @@ export default function LaceInventoryDashboard() {
     }
   };
 
-  // Step 1: Scan Barcode to fetch Master Design Info
-  const handleBarcodeScan = async (e: FormEvent) => {
+  // 1. Fetch design info when barcode is entered
+  const handleBarcodeSearch = async (e: FormEvent) => {
     e.preventDefault();
     if (!scanInput) return;
 
@@ -39,7 +39,6 @@ export default function LaceInventoryDashboard() {
       
       const data = await res.json();
       setScannedDesign({ ...data, barcode: scanInput });
-      // Default to the first available color in the dropdown
       setSelectedColor(data.colorStock[0]?.color || ''); 
       setMessage('');
     } catch (error) {
@@ -48,7 +47,7 @@ export default function LaceInventoryDashboard() {
     }
   };
 
-  // Step 2: Submit the Color and Quantity for the transaction
+  // 2. Process the Add/Deduct transaction
   const handleTransactionSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!scannedDesign || !selectedColor) return;
@@ -67,10 +66,10 @@ export default function LaceInventoryDashboard() {
 
       if (res.ok) {
         setMessage(`Success: ${transactionType} ${scanQty} pkt of ${scannedDesign.designNo} (${selectedColor})`);
-        setScannedDesign(null); // Reset scanner for next item
+        setScannedDesign(null); 
         setScanInput('');
         setScanQty(1);
-        fetchLedger(); // Refresh the grid
+        fetchLedger(); 
       } else {
         setMessage('Error saving transaction.');
       }
@@ -79,9 +78,8 @@ export default function LaceInventoryDashboard() {
     }
   };
 
-  // Ledger Action: Edit
   const handleEdit = async (id: number, currentQty: number) => {
-    const newQty = prompt(`Enter corrected quantity for Transaction ID ${id}:`, currentQty.toString());
+    const newQty = prompt(`Enter corrected quantity for ID ${id}:`, currentQty.toString());
     if (!newQty || isNaN(Number(newQty))) return;
 
     try {
@@ -96,10 +94,8 @@ export default function LaceInventoryDashboard() {
     }
   };
 
-  // Ledger Action: Delete
   const handleDelete = async (id: number) => {
-    if (!confirm(`Are you sure you want to delete Transaction ID ${id}?`)) return;
-    
+    if (!confirm(`Are you sure you want to delete ID ${id}?`)) return;
     try {
       await fetch(`${API_URL}/ledger/${id}`, { method: 'DELETE' });
       fetchLedger();
@@ -111,60 +107,59 @@ export default function LaceInventoryDashboard() {
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <header className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Godown Inventory Control</h1>
+        <h1 className="text-2xl font-bold text-gray-800">Saree Lace Inventory Control</h1>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* SCANNER ENTRY PANEL */}
         <div className="bg-white p-6 rounded-lg shadow lg:col-span-1">
-          <h2 className="text-lg font-semibold mb-4 border-b pb-2">1. Scan Barcode</h2>
+          <h2 className="text-lg font-semibold mb-4 border-b pb-2">Quick Scan Entry</h2>
           
-          <form onSubmit={handleBarcodeScan} className="flex gap-2 mb-6">
-            <input 
-              type="text" 
-              value={scanInput} 
-              onChange={(e) => setScanInput(e.target.value)} 
-              autoFocus 
-              placeholder="Scan design barcode..."
-              className="w-full border rounded p-2 text-lg focus:ring-2 focus:ring-blue-500 bg-blue-50"
-            />
-            <button type="submit" className="bg-gray-800 text-white font-bold py-2 px-4 rounded">
-              Search
-            </button>
+          <form onSubmit={handleBarcodeSearch} className="mb-4">
+             <label className="block text-sm font-medium text-gray-700 mb-1">Scan Barcode First</label>
+             <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  value={scanInput} 
+                  onChange={(e) => setScanInput(e.target.value)} 
+                  autoFocus 
+                  placeholder="Scan or type barcode..."
+                  className="w-full border rounded p-3 text-lg focus:ring-2 focus:ring-blue-500 bg-blue-50"
+                />
+                <button type="submit" className="bg-gray-800 text-white font-bold py-2 px-4 rounded">Search</button>
+             </div>
           </form>
 
-          {/* COLOR AND QTY POPUP AREA (Only shows after successful scan) */}
           {scannedDesign && (
-            <div className="bg-blue-50 p-4 rounded border border-blue-200">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-bold text-lg">{scannedDesign.designNo}</h3>
-                <span className="bg-white px-2 py-1 rounded text-sm shadow">₹{scannedDesign.price}</span>
-              </div>
-              
-              <div className="mb-4">
-                <h4 className="text-xs font-bold text-gray-500 uppercase">Current Stock By Color</h4>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {scannedDesign.colorStock.map((cs: any) => (
-                    <span key={cs.color} className="text-sm bg-white border px-2 py-1 rounded">
-                      {cs.color}: <b className={cs.stock < 0 ? 'text-red-500' : 'text-green-600'}>{cs.stock}</b>
-                    </span>
-                  ))}
+             <form onSubmit={handleTransactionSubmit} className="space-y-4 bg-blue-50 p-4 rounded border border-blue-200">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="font-bold text-lg">{scannedDesign.designNo}</h3>
+                  <span className="bg-white px-2 py-1 rounded text-sm shadow">₹{scannedDesign.price}</span>
                 </div>
-              </div>
+                
+                <div className="text-sm mb-3">
+                  <span className="font-semibold text-gray-600">Available Stock:</span>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {scannedDesign.colorStock.map((cs: any) => (
+                      <span key={cs.color} className="bg-white border px-2 py-1 rounded text-xs">
+                        {cs.color}: <b>{cs.stock}</b>
+                      </span>
+                    ))}
+                  </div>
+                </div>
 
-              <form onSubmit={handleTransactionSubmit} className="space-y-4">
-                <div className="flex gap-4">
+                <div className="flex gap-4 mb-2">
                   <label className="flex items-center">
-                    <input type="radio" value="INWARD" checked={transactionType === 'INWARD'} onChange={() => setTransactionType('INWARD')} className="mr-1" /> Add
+                    <input type="radio" value="INWARD" checked={transactionType === 'INWARD'} onChange={() => setTransactionType('INWARD')} className="mr-2" /> Inward (Add)
                   </label>
                   <label className="flex items-center">
-                    <input type="radio" value="OUTWARD" checked={transactionType === 'OUTWARD'} onChange={() => setTransactionType('OUTWARD')} className="mr-1" /> Deduct
+                    <input type="radio" value="OUTWARD" checked={transactionType === 'OUTWARD'} onChange={() => setTransactionType('OUTWARD')} className="mr-2" /> Outward (Deduct)
                   </label>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Select Scanned Color</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Select Color</label>
                   <select 
                     value={selectedColor} 
                     onChange={e => setSelectedColor(e.target.value)}
@@ -190,8 +185,7 @@ export default function LaceInventoryDashboard() {
                 <button type="submit" className="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition">
                   Process Transaction
                 </button>
-              </form>
-            </div>
+             </form>
           )}
 
           {message && (
@@ -201,15 +195,14 @@ export default function LaceInventoryDashboard() {
           )}
         </div>
 
-        {/* LEDGER DATA GRID */}
+        {/* INVENTORY DATA GRID */}
         <div className="bg-white p-6 rounded-lg shadow lg:col-span-2">
-          <h2 className="text-lg font-semibold mb-4 border-b pb-2">Live Ledger & Corrections</h2>
+          <h2 className="text-lg font-semibold mb-4 border-b pb-2">Live Stock Catalog</h2>
           
-          <div className="overflow-x-auto max-h-[600px]">
+          <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
-              <thead className="sticky top-0 bg-white">
+              <thead>
                 <tr className="bg-gray-50 text-gray-600 text-sm">
-                  <th className="p-3 border-b">ID</th>
                   <th className="p-3 border-b">Design No</th>
                   <th className="p-3 border-b">Color</th>
                   <th className="p-3 border-b">Type</th>
@@ -220,28 +213,22 @@ export default function LaceInventoryDashboard() {
               <tbody>
                 {ledger.map((row) => (
                   <tr key={row.ledger_TransactionID} className="hover:bg-gray-50 transition border-b text-sm">
-                    <td className="p-3 text-gray-500">#{row.ledger_TransactionID}</td>
                     <td className="p-3 font-medium">{row.design_DesignNo}</td>
                     <td className="p-3">{row.ledger_Color}</td>
                     <td className="p-3">
-                      <span className={`px-2 py-1 rounded text-xs font-bold ${row.ledger_TransactionType === 'INWARD' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                       <span className={`px-2 py-1 rounded text-xs font-bold ${row.ledger_TransactionType === 'INWARD' ? 'text-green-700' : 'text-orange-700'}`}>
                         {row.ledger_TransactionType}
                       </span>
                     </td>
-                    <td className="p-3 text-right font-bold">
+                    <td className="p-3 text-right font-bold text-blue-600">
                       {row.ledger_Quantity}
                     </td>
                     <td className="p-3 text-center">
-                      <button onClick={() => handleEdit(row.ledger_TransactionID, row.ledger_Quantity)} className="text-blue-500 hover:text-blue-700 mx-2" title="Edit Quantity">✏️</button>
-                      <button onClick={() => handleDelete(row.ledger_TransactionID)} className="text-red-500 hover:text-red-700 mx-2" title="Delete Scan">🗑️</button>
+                      <button onClick={() => handleEdit(row.ledger_TransactionID, row.ledger_Quantity)} className="text-blue-500 hover:text-blue-700 mx-2">✏️</button>
+                      <button onClick={() => handleDelete(row.ledger_TransactionID)} className="text-red-500 hover:text-red-700 mx-2">🗑️</button>
                     </td>
                   </tr>
                 ))}
-                {ledger.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="p-4 text-center text-gray-500">No transactions recorded yet.</td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </div>

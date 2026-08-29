@@ -1,6 +1,10 @@
-import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
-import { useState, useEffect, type FormEvent, type ChangeEvent } from 'react';
-import { PlusCircle, Printer, Maximize, FileText, ScanLine, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
+// import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
+// import { useState, useEffect, type FormEvent, type ChangeEvent } from 'react';
+// import { PlusCircle, Printer, Maximize, FileText, ScanLine, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
+// import Barcode from 'react-barcode';
+
+import { useState, useEffect } from 'react';
+import { Printer } from 'lucide-react';
 import Barcode from 'react-barcode';
 
 const API_URL = 'https://lace-erp-backend.onrender.com/api/inventory';
@@ -99,7 +103,7 @@ function EntryPage() {
 
 
 // --- PAGE 2: PRINT LABELS ---
-function BarcodeGeneratePage() {
+export default function BarcodeGeneratePage() {
   const [designs, setDesigns] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [printData, setPrintData] = useState<any>(null);
@@ -168,17 +172,26 @@ function BarcodeGeneratePage() {
       {/* 2. PRINT ONLY VIEW (Strict 50mm x 15mm Layout) */}
       {printData && (
         <>
-          {/* Forces the printer dialog to default to your label roll size and removes margins */}
           <style type="text/css" media="print">
             {`
               @page { size: 50mm 15mm; margin: 0; }
-              body { margin: 0; padding: 0; background: white; }
+              html, body, #root { 
+                margin: 0 !important; 
+                padding: 0 !important; 
+                height: 15mm !important; 
+                width: 50mm !important; 
+                min-height: 0 !important;
+                overflow: hidden !important; 
+              }
+              /* Eliminate scrollbars globally on print */
+              ::-webkit-scrollbar { display: none !important; }
             `}
           </style>
 
+          {/* Absolute positioning breaks it out of the main App flexbox to prevent extra pages */}
           <div 
-            className="hidden print:flex flex-col items-center justify-center text-black bg-white" 
-            style={{ width: '50mm', height: '15mm', overflow: 'hidden', padding: '1mm' }}
+            className="hidden print:flex flex-col items-center justify-center text-black bg-white absolute top-0 left-0 m-0 box-border" 
+            style={{ width: '50mm', height: '15mm', padding: '1mm' }}
           >
             {/* Header: Design No & Price */}
             <div className="w-full flex justify-between items-center px-1 font-bold" style={{ fontSize: '9px', lineHeight: '10px' }}>
@@ -186,15 +199,15 @@ function BarcodeGeneratePage() {
               <span>₹{printData.Price}</span>
             </div>
             
-            {/* Ultra-compact Barcode graphic */}
-            <div className="w-full flex justify-center mt-[1px]">
+            {/* Centered Barcode graphic */}
+            <div className="w-full flex justify-center items-center mt-[1px]">
               <Barcode 
                 value={printData.Barcode} 
                 format="CODE128" 
-                width={1}           // Thinnest possible lines to fit 50mm width
-                height={22}         // Short height to fit 15mm label
-                displayValue={true} // Show the numbers underneath
-                fontSize={8}        // Tiny text for the barcode numbers
+                width={1.1}           
+                height={22}         
+                displayValue={true} 
+                fontSize={10}        
                 margin={0}
                 background="transparent"
               />

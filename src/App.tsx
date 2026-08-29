@@ -398,7 +398,7 @@ function BottomNav() {
   ];
 
   return (
-    <nav className="absolute bottom-0 w-full bg-white/80 backdrop-blur-lg border-t border-slate-200 flex justify-around items-center h-20 pb-safe z-50 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
+    <nav className="print:hidden absolute bottom-0 w-full bg-white/80 backdrop-blur-lg border-t border-slate-200 flex justify-around items-center h-20 pb-safe z-50 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
       {navItems.map((item) => {
         const isActive = location.pathname === item.path;
         return (

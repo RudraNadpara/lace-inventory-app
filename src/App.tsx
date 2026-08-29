@@ -102,8 +102,6 @@ function EntryPage() {
 function BarcodeGeneratePage() {
   const [designs, setDesigns] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // State to hold the specific label we want to print right now
   const [printData, setPrintData] = useState<any>(null);
 
   useEffect(() => { fetchDesigns(); }, []);
@@ -123,23 +121,16 @@ function BarcodeGeneratePage() {
 
   const handlePrint = (item: any) => {
     if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
-    
-    // 1. Set the item to be printed
     setPrintData(item);
-    
-    // 2. Wait a split second for React to render the hidden print area, then trigger print
     setTimeout(() => {
       window.print();
-      // 3. Clear it after the print dialog closes so the screen goes back to normal
       setPrintData(null); 
     }, 150);
   };
 
   return (
     <>
-      {/* ------------------------------------------------------------- */}
-      {/* SCREEN VIEW (Hidden during printing using Tailwind 'print:hidden') */}
-      {/* ------------------------------------------------------------- */}
+      {/* 1. SCREEN VIEW (Hidden during printing) */}
       <div className="print:hidden p-5 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-500 h-full flex flex-col">
         <div className="mb-6 flex justify-between items-end">
           <div>
@@ -166,10 +157,7 @@ function BarcodeGeneratePage() {
                   {item.Barcode}
                 </p>
               </div>
-              <button 
-                onClick={() => handlePrint(item)} 
-                className="bg-slate-800 active:bg-slate-900 active:scale-95 text-white p-3 rounded-xl shadow-md transition-all"
-              >
+              <button onClick={() => handlePrint(item)} className="bg-slate-800 active:bg-slate-900 active:scale-95 text-white p-3 rounded-xl shadow-md transition-all">
                 <Printer size={20} />
               </button>
             </div>
@@ -177,33 +165,42 @@ function BarcodeGeneratePage() {
         </div>
       </div>
 
-      {/* ------------------------------------------------------------- */}
-      {/* PRINT ONLY VIEW (Hidden on screen, visible only to printer) */}
-      {/* ------------------------------------------------------------- */}
+      {/* 2. PRINT ONLY VIEW (Strict 50mm x 15mm Layout) */}
       {printData && (
-        <div className="hidden print:flex flex-col items-center justify-center w-full pt-8">
-          <div className="text-center p-6 border-4 border-black rounded-xl inline-block">
-            <h2 className="text-4xl font-extrabold text-black tracking-widest mb-4 uppercase">
-              {printData.DesignNo}
-            </h2>
+        <>
+          {/* Forces the printer dialog to default to your label roll size and removes margins */}
+          <style type="text/css" media="print">
+            {`
+              @page { size: 50mm 15mm; margin: 0; }
+              body { margin: 0; padding: 0; background: white; }
+            `}
+          </style>
+
+          <div 
+            className="hidden print:flex flex-col items-center justify-center text-black bg-white" 
+            style={{ width: '50mm', height: '15mm', overflow: 'hidden', padding: '1mm' }}
+          >
+            {/* Header: Design No & Price */}
+            <div className="w-full flex justify-between items-center px-1 font-bold" style={{ fontSize: '9px', lineHeight: '10px' }}>
+              <span>{printData.DesignNo}</span>
+              <span>₹{printData.Price}</span>
+            </div>
             
-            <div className="flex justify-center mb-4">
+            {/* Ultra-compact Barcode graphic */}
+            <div className="w-full flex justify-center mt-[1px]">
               <Barcode 
                 value={printData.Barcode} 
                 format="CODE128" 
-                width={2.5} 
-                height={80} 
-                displayValue={true} 
-                fontSize={20}
+                width={1}           // Thinnest possible lines to fit 50mm width
+                height={22}         // Short height to fit 15mm label
+                displayValue={true} // Show the numbers underneath
+                fontSize={8}        // Tiny text for the barcode numbers
                 margin={0}
+                background="transparent"
               />
             </div>
-            
-            <p className="text-2xl font-bold text-black mt-2">
-              MRP: ₹{printData.Price}
-            </p>
           </div>
-        </div>
+        </>
       )}
     </>
   );

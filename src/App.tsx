@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { useState, useEffect, type FormEvent, type ChangeEvent } from 'react';
 import { PlusCircle, Printer, Maximize, FileText, ScanLine, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
+import Barcode from 'react-barcode';
 
 const API_URL = 'https://lace-erp-backend.onrender.com/api/inventory';
 
@@ -96,11 +97,14 @@ function EntryPage() {
   );
 }
 
-// --- PAGE 2: PRINT LABELS ---
+
 // --- PAGE 2: PRINT LABELS ---
 function BarcodeGeneratePage() {
   const [designs, setDesigns] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // State to hold the specific label we want to print right now
+  const [printData, setPrintData] = useState<any>(null);
 
   useEffect(() => { fetchDesigns(); }, []);
 
@@ -117,48 +121,91 @@ function BarcodeGeneratePage() {
     }
   };
 
-  // ADDED: The print function to trigger the hardware printer
-  const handlePrint = (designNo: string) => {
-    console.log(`Sending design ${designNo} to printer...`);
+  const handlePrint = (item: any) => {
     if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
-    window.print();
+    
+    // 1. Set the item to be printed
+    setPrintData(item);
+    
+    // 2. Wait a split second for React to render the hidden print area, then trigger print
+    setTimeout(() => {
+      window.print();
+      // 3. Clear it after the print dialog closes so the screen goes back to normal
+      setPrintData(null); 
+    }, 150);
   };
 
   return (
-    <div className="p-5 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-500 h-full flex flex-col">
-      <div className="mb-6 flex justify-between items-end">
-        <div>
-          <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Print Labels</h2>
-          <p className="text-slate-500 text-sm">Generate stickers for the floor.</p>
+    <>
+      {/* ------------------------------------------------------------- */}
+      {/* SCREEN VIEW (Hidden during printing using Tailwind 'print:hidden') */}
+      {/* ------------------------------------------------------------- */}
+      <div className="print:hidden p-5 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-500 h-full flex flex-col">
+        <div className="mb-6 flex justify-between items-end">
+          <div>
+            <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Print Labels</h2>
+            <p className="text-slate-500 text-sm">Generate stickers for the floor.</p>
+          </div>
+          <button onClick={fetchDesigns} className="p-2 bg-indigo-50 text-indigo-600 rounded-xl active:scale-95 transition-transform">
+            <span className="text-xs font-bold px-2">Refresh</span>
+          </button>
         </div>
-        <button onClick={fetchDesigns} className="p-2 bg-indigo-50 text-indigo-600 rounded-xl active:scale-95 transition-transform">
-          <span className="text-xs font-bold px-2">Refresh</span>
-        </button>
+
+        <div className="flex-1 overflow-y-auto space-y-4 scrollbar-hide relative">
+          {isLoading && (
+            <div className="absolute inset-0 bg-slate-50/80 backdrop-blur-sm flex items-center justify-center z-10">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            </div>
+          )}
+          {designs.map((item, idx) => (
+            <div key={idx} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center relative overflow-hidden">
+              <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-500"></div>
+              <div className="pl-2">
+                <p className="font-bold text-slate-800 text-lg">{item.DesignNo}</p>
+                <p className="text-sm font-mono text-slate-600 bg-slate-100 px-2 py-0.5 mt-1 rounded inline-block">
+                  {item.Barcode}
+                </p>
+              </div>
+              <button 
+                onClick={() => handlePrint(item)} 
+                className="bg-slate-800 active:bg-slate-900 active:scale-95 text-white p-3 rounded-xl shadow-md transition-all"
+              >
+                <Printer size={20} />
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-4 scrollbar-hide relative">
-        {isLoading && (
-          <div className="absolute inset-0 bg-slate-50/80 backdrop-blur-sm flex items-center justify-center z-10">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-          </div>
-        )}
-        {designs.map((item, idx) => (
-          <div key={idx} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center relative overflow-hidden">
-            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-500"></div>
-            <div className="pl-2">
-              <p className="font-bold text-slate-800 text-lg">{item.DesignNo}</p>
-              <p className="text-sm font-mono text-slate-600 bg-slate-100 px-2 py-0.5 mt-1 rounded inline-block">
-                {item.Barcode}
-              </p>
+      {/* ------------------------------------------------------------- */}
+      {/* PRINT ONLY VIEW (Hidden on screen, visible only to printer) */}
+      {/* ------------------------------------------------------------- */}
+      {printData && (
+        <div className="hidden print:flex flex-col items-center justify-center w-full pt-8">
+          <div className="text-center p-6 border-4 border-black rounded-xl inline-block">
+            <h2 className="text-4xl font-extrabold text-black tracking-widest mb-4 uppercase">
+              {printData.DesignNo}
+            </h2>
+            
+            <div className="flex justify-center mb-4">
+              <Barcode 
+                value={printData.Barcode} 
+                format="CODE128" 
+                width={2.5} 
+                height={80} 
+                displayValue={true} 
+                fontSize={20}
+                margin={0}
+              />
             </div>
-            {/* FIXED: Added onClick to trigger the handlePrint function */}
-            <button onClick={() => handlePrint(item.DesignNo)} className="bg-slate-800 active:bg-slate-900 active:scale-95 text-white p-3 rounded-xl shadow-md transition-all">
-              <Printer size={20} />
-            </button>
+            
+            <p className="text-2xl font-bold text-black mt-2">
+              MRP: ₹{printData.Price}
+            </p>
           </div>
-        ))}
-      </div>
-    </div>
+        </div>
+      )}
+    </>
   );
 }
 

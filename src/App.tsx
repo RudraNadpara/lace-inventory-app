@@ -103,7 +103,7 @@ function EntryPage() {
 
 
 // --- PAGE 2: PRINT LABELS ---
-export default function BarcodeGeneratePage() {
+function BarcodeGeneratePage() {
   const [designs, setDesigns] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [printData, setPrintData] = useState<any>(null);
@@ -178,36 +178,37 @@ export default function BarcodeGeneratePage() {
               html, body, #root { 
                 margin: 0 !important; 
                 padding: 0 !important; 
-                height: 15mm !important; 
                 width: 50mm !important; 
-                min-height: 0 !important;
+                height: 15mm !important; 
                 overflow: hidden !important; 
+                background: white !important;
               }
-              /* Eliminate scrollbars globally on print */
-              ::-webkit-scrollbar { display: none !important; }
+              /* Forcefully remove all scrollbars */
+              ::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+              * { scrollbar-width: none !important; overflow: hidden !important; box-sizing: border-box !important; }
             `}
           </style>
 
-          {/* Absolute positioning breaks it out of the main App flexbox to prevent extra pages */}
+          {/* FIXED POSITIONING: Detaches label from app layout to prevent blank pages and scrollbars */}
           <div 
-            className="hidden print:flex flex-col items-center justify-center text-black bg-white absolute top-0 left-0 m-0 box-border" 
+            className="hidden print:flex flex-col items-center text-black bg-white fixed top-0 left-0 z-[9999]" 
             style={{ width: '50mm', height: '15mm', padding: '1mm' }}
           >
             {/* Header: Design No & Price */}
-            <div className="w-full flex justify-between items-center px-1 font-bold" style={{ fontSize: '9px', lineHeight: '10px' }}>
+            <div className="w-full flex justify-between items-center font-bold" style={{ fontSize: '10px', padding: '0 2mm' }}>
               <span>{printData.DesignNo}</span>
               <span>₹{printData.Price}</span>
             </div>
             
-            {/* Centered Barcode graphic */}
-            <div className="w-full flex justify-center items-center mt-[1px]">
+            {/* CENTERED BARCODE: flex-1 takes remaining height, justify-center perfectly centers the SVG */}
+            <div className="w-full flex-1 flex justify-center items-center">
               <Barcode 
                 value={printData.Barcode} 
                 format="CODE128" 
-                width={1.1}           
-                height={22}         
+                width={1.2}           
+                height={24}         
                 displayValue={true} 
-                fontSize={10}        
+                fontSize={11}        
                 margin={0}
                 background="transparent"
               />

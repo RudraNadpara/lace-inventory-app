@@ -102,7 +102,12 @@ function EntryPage() {
 function BarcodeGeneratePage() {
   const [designs, setDesigns] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [printData, setPrintData] = useState<any>(null);
+  
+  // Stores the quantity for each design (e.g., { 'LACE-115': 5 })
+  const [printCounts, setPrintCounts] = useState<Record<string, number>>({});
+  
+  // Stores the active print job details
+  const [printData, setPrintData] = useState<{ item: any, count: number } | null>(null);
 
   useEffect(() => { fetchDesigns(); }, []);
 
@@ -119,9 +124,18 @@ function BarcodeGeneratePage() {
     }
   };
 
+  const handleCountChange = (designNo: string, count: number) => {
+    setPrintCounts(prev => ({ ...prev, [designNo]: count }));
+  };
+
   const handlePrint = (item: any) => {
+    // Get the requested count, default to 1 if empty
+    const count = printCounts[item.DesignNo] || 1; 
+    
     if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
-    setPrintData(item);
+    
+    setPrintData({ item, count });
+    
     setTimeout(() => {
       window.print();
       setPrintData(null); 
@@ -157,15 +171,27 @@ function BarcodeGeneratePage() {
                   {item.Barcode}
                 </p>
               </div>
-              <button onClick={() => handlePrint(item)} className="bg-slate-800 active:bg-slate-900 active:scale-95 text-white p-3 rounded-xl shadow-md transition-all">
-                <Printer size={20} />
-              </button>
+              
+              {/* ADDED: Quantity Input Box & Print Button Group */}
+              <div className="flex items-center gap-2">
+                <input 
+                  type="number" 
+                  min="1"
+                  value={printCounts[item.DesignNo] || 1}
+                  onChange={(e) => handleCountChange(item.DesignNo, parseInt(e.target.value) || 1)}
+                  className="w-16 bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-center text-sm font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
+                />
+                <button onClick={() => handlePrint(item)} className="bg-slate-800 active:bg-slate-900 active:scale-95 text-white p-3 rounded-xl shadow-md transition-all">
+                  <Printer size={20} />
+                </button>
+              </div>
+
             </div>
           ))}
         </div>
       </div>
 
-      {/* 2. PRINT ONLY VIEW (Strict 50mm x 15mm Layout) */}
+      {/* 2. PRINT ONLY VIEW (Handles multiple labels & page breaks perfectly) */}
       {printData && (
         <>
           <style type="text/css" media="print">
@@ -174,41 +200,54 @@ function BarcodeGeneratePage() {
               html, body, #root { 
                 margin: 0 !important; 
                 padding: 0 !important; 
-                width: 50mm !important; 
-                height: 15mm !important; 
-                overflow: hidden !important; 
                 background: white !important;
               }
               /* Forcefully remove all scrollbars */
               ::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
-              * { scrollbar-width: none !important; overflow: hidden !important; box-sizing: border-box !important; }
+              * { scrollbar-width: none !important; box-sizing: border-box !important; }
             `}
           </style>
 
-          {/* FIXED POSITIONING: Detaches label from app layout to prevent blank pages and scrollbars */}
-          <div 
-            className="hidden print:flex flex-col items-center text-black bg-white fixed top-0 left-0 z-[9999]" 
-            style={{ width: '50mm', height: '15mm', padding: '1mm' }}
-          >
-            {/* Header: Design No & Price */}
-            <div className="w-full flex justify-between items-center font-bold" style={{ fontSize: '10px', padding: '0 2mm' }}>
-              <span>{printData.DesignNo}</span>
-              <span>₹{printData.Price}</span>
-            </div>
+          {/* This container replaces the screen view during print */}
+          <div className="hidden print:block w-full bg-white">
             
-            {/* CENTERED BARCODE: flex-1 takes remaining height, justify-center perfectly centers the SVG */}
-            <div className="w-full flex-1 flex justify-center items-center">
-              <Barcode 
-                value={printData.Barcode} 
-                format="CODE128" 
-                width={1.2}           
-                height={24}         
-                displayValue={true} 
-                fontSize={11}        
-                margin={0}
-                background="transparent"
-              />
-            </div>
+            {/* Loop X times based on the requested count */}
+            {Array.from({ length: printData.count }).map((_, i) => (
+              
+              <div 
+                key={i} 
+                className="flex flex-col items-center bg-white" 
+                style={{ 
+                  width: '50mm', 
+                  height: '15mm', 
+                  padding: '1mm',
+                  overflow: 'hidden',
+                  pageBreakAfter: 'always', // Tells the printer to cut/feed after this label
+                  breakAfter: 'page'
+                }}
+              >
+                {/* Header: Design No & Price */}
+                <div className="w-full flex justify-between items-center font-bold" style={{ fontSize: '10px', padding: '0 2mm' }}>
+                  <span>{printData.item.DesignNo}</span>
+                  <span>₹{printData.item.Price}</span>
+                </div>
+                
+                {/* CENTERED BARCODE */}
+                <div className="w-full flex-1 flex justify-center items-center">
+                  <Barcode 
+                    value={printData.item.Barcode} 
+                    format="CODE128" 
+                    width={1.2}           
+                    height={24}         
+                    displayValue={true} 
+                    fontSize={11}        
+                    margin={0}
+                    background="transparent"
+                  />
+                </div>
+              </div>
+
+            ))}
           </div>
         </>
       )}

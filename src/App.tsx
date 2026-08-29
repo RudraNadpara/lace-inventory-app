@@ -97,6 +97,7 @@ function EntryPage() {
 }
 
 // --- PAGE 2: PRINT LABELS ---
+// --- PAGE 2: PRINT LABELS ---
 function BarcodeGeneratePage() {
   const [designs, setDesigns] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -114,6 +115,13 @@ function BarcodeGeneratePage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // ADDED: The print function to trigger the hardware printer
+  const handlePrint = (designNo: string) => {
+    console.log(`Sending design ${designNo} to printer...`);
+    if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
+    window.print();
   };
 
   return (
@@ -143,7 +151,8 @@ function BarcodeGeneratePage() {
                 {item.Barcode}
               </p>
             </div>
-            <button className="bg-slate-800 active:bg-slate-900 active:scale-95 text-white p-3 rounded-xl shadow-md transition-all">
+            {/* FIXED: Added onClick to trigger the handlePrint function */}
+            <button onClick={() => handlePrint(item.DesignNo)} className="bg-slate-800 active:bg-slate-900 active:scale-95 text-white p-3 rounded-xl shadow-md transition-all">
               <Printer size={20} />
             </button>
           </div>

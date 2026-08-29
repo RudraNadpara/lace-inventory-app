@@ -1,10 +1,6 @@
-// import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
-// import { useState, useEffect, type FormEvent, type ChangeEvent } from 'react';
-// import { PlusCircle, Printer, Maximize, FileText, ScanLine, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
-// import Barcode from 'react-barcode';
-
-import { useState, useEffect } from 'react';
-import { Printer } from 'lucide-react';
+import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { useState, useEffect, type FormEvent, type ChangeEvent } from 'react';
+import { PlusCircle, Printer, Maximize, FileText, ScanLine, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 import Barcode from 'react-barcode';
 
 const API_URL = 'https://lace-erp-backend.onrender.com/api/inventory';

@@ -2,10 +2,107 @@ import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-do
 import { useState, useEffect, type FormEvent, type ChangeEvent } from 'react';
 //import { PlusCircle, Printer, Maximize, FileText, ScanLine, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 //import { PlusCircle, Printer, Maximize, FileText, ScanLine, ArrowDownToLine, ArrowUpFromLine, ImagePlus, X } from 'lucide-react';
-import { PlusCircle, Printer, Maximize, FileText, ScanLine, ArrowDownToLine, ArrowUpFromLine, ImagePlus, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { PlusCircle, Printer, Maximize, FileText, ScanLine, ArrowDownToLine, ArrowUpFromLine, ImagePlus, X, ChevronDown, ChevronUp, Search, Filter, Edit2, Check, UserCircle } from 'lucide-react';
 import Barcode from 'react-barcode';
 
 const API_URL = 'https://lace-erp-backend.onrender.com/api/inventory';
+
+// ... (Keep all your other imports and page functions the same)
+
+// --- ADDED: LOGIN PAGE ---
+function LoginPage({ onLogin }: { onLogin: (username: string) => void }) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Simple PIN check for warehouse floor (you can change this to match a real database later)
+    if (username.trim() !== '' && password === '1234') {
+      onLogin(username.trim());
+    } else {
+      setError('Invalid credentials. (Hint: Use PIN 1234)');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center p-5 animate-in fade-in">
+      <div className="bg-white p-8 rounded-3xl shadow-lg border border-slate-100 w-full max-w-sm">
+        <div className="flex justify-center mb-6">
+          <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center">
+            <UserCircle size={32} />
+          </div>
+        </div>
+        <h2 className="text-2xl font-extrabold text-slate-800 text-center mb-2">Lace ERP</h2>
+        <p className="text-slate-500 text-sm text-center mb-8">Sign in to track floor inventory</p>
+
+        {error && <div className="mb-4 p-3 bg-rose-50 text-rose-600 text-sm rounded-xl text-center font-medium border border-rose-100">{error}</div>}
+
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">User ID</label>
+            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="e.g. Employee Name" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none" required autoFocus />
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Floor PIN</label>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none" required />
+          </div>
+          <button type="submit" className="w-full bg-indigo-600 active:scale-95 text-white font-bold py-4 rounded-xl shadow-md transition-all mt-4">
+            Login
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// --- MAIN APP WRAPPER (UPDATED) ---
+export default function App() {
+  const [currentUser, setCurrentUser] = useState(localStorage.getItem('erp_user'));
+
+  const handleLogin = (user: string) => {
+    localStorage.setItem('erp_user', user);
+    setCurrentUser(user);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('erp_user');
+    setCurrentUser(null);
+  };
+
+  if (!currentUser) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
+
+  return (
+    <BrowserRouter>
+      <div className="max-w-md mx-auto bg-slate-50 h-screen flex flex-col relative shadow-2xl overflow-hidden sm:border-x sm:border-slate-200 font-sans selection:bg-indigo-100 selection:text-indigo-900">
+        
+        {/* Added a tiny top bar to show who is logged in and a logout button */}
+        <div className="print:hidden bg-white px-5 py-3 flex justify-between items-center border-b border-slate-200 z-10">
+          <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+            <UserCircle size={14} className="text-indigo-600" />
+            {currentUser}
+          </span>
+          <button onClick={handleLogout} className="text-slate-400 hover:text-rose-500 active:scale-95 transition-transform p-1">
+             {/* Make sure you imported LogOut from lucide-react */}
+             <span className="text-[10px] font-bold uppercase tracking-wider">Log out</span>
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto scrollbar-hide">
+          <Routes>
+            <Route path="/" element={<EntryPage />} />
+            <Route path="/generate" element={<BarcodeGeneratePage />} />
+            <Route path="/scan" element={<BarcodeScanPage />} />
+            <Route path="/report" element={<ReportPage />} />
+          </Routes>
+        </div>
+        <BottomNav />
+      </div>
+    </BrowserRouter>
+  );
+}
 
 // --- PAGE 1: ENTRY PAGE ---
 function EntryPage() {
@@ -339,7 +436,14 @@ function BarcodeScanPage() {
       const res = await fetch(`${API_URL}/scan`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ barcode: scannedDesign.barcode, color: selectedColor, type: txType, qty: Number(qty) })
+        //body: JSON.stringify({ barcode: scannedDesign.barcode, color: selectedColor, type: txType, qty: Number(qty) })
+        body: JSON.stringify({ 
+            barcode: scannedDesign.barcode, 
+            color: selectedColor, 
+            type: txType, 
+            qty: Number(qty),
+            username: localStorage.getItem('erp_user') || 'Unknown' // <-- Added
+          })
       });
       if (res.ok) {
         if (navigator.vibrate) navigator.vibrate(100); 
@@ -425,6 +529,14 @@ function ReportPage() {
   const [reportData, setReportData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+  
+  // Search & Filter State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [hideEmpty, setHideEmpty] = useState(false);
+
+  // Inline Edit State
+  const [editingVariant, setEditingVariant] = useState<{designNo: string, color: string} | null>(null);
+  const [editStockValue, setEditStockValue] = useState<number>(0);
 
   useEffect(() => { fetchReport(); }, []);
 
@@ -445,11 +557,52 @@ function ReportPage() {
     setExpandedRows(prev => ({ ...prev, [designNo]: !prev[designNo] }));
   };
 
-  // Group the flat SQL data into structured objects by Design No
+  // Automatically calculate the adjustment and post it to the scanner API
+  const handleStockUpdate = async (barcode: string, color: string, oldStock: number, newStock: number) => {
+    if (oldStock === newStock) {
+      setEditingVariant(null);
+      return;
+    }
+
+    const diff = newStock - oldStock;
+    const txType = diff > 0 ? 'INWARD' : 'OUTWARD';
+    const qty = Math.abs(diff);
+
+    try {
+      setIsLoading(true);
+      const res = await fetch(`${API_URL}/scan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        //body: JSON.stringify({ barcode, color, type: txType, qty })
+        body: JSON.stringify({ 
+          barcode, 
+          color, 
+          type: txType, 
+          qty,
+          username: localStorage.getItem('erp_user') || 'Unknown' // <-- Added
+        })
+      });
+      
+      if (res.ok) {
+        if (navigator.vibrate) navigator.vibrate(50);
+        await fetchReport(); // Instantly refresh the ledger
+      } else {
+        alert('Error updating stock. Check connection.');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setEditingVariant(null);
+      setIsLoading(false);
+    }
+  };
+
+  // Group the flat SQL data into structured objects
   const groupedLedger = reportData.reduce((acc, curr) => {
     if (!acc[curr.designNo]) {
       acc[curr.designNo] = {
         designNo: curr.designNo,
+        barcode: curr.barcode || `LACE-${curr.designNo.toUpperCase()}`, // Fallback if backend is still deploying
         price: curr.price,
         imageUrl: curr.imageUrl,
         totalStock: 0,
@@ -466,15 +619,44 @@ function ReportPage() {
 
   const designs = Object.values(groupedLedger) as any[];
 
+  // Apply Search and Filter logic
+  const filteredDesigns = designs.filter(item => {
+    const matchesSearch = item.designNo.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          item.colors.some((c: string) => c.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesFilter = hideEmpty ? item.totalStock > 0 : true;
+    return matchesSearch && matchesFilter;
+  });
+
   return (
     <div className="p-5 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-500 h-full flex flex-col">
-      <div className="mb-6 flex justify-between items-end">
+      <div className="mb-4 flex justify-between items-end">
         <div>
           <h2 className="text-2xl font-extrabold text-slate-800 tracking-tight">Live Ledger</h2>
           <p className="text-slate-500 text-sm">Real-time catalog availability.</p>
         </div>
         <button onClick={fetchReport} className="p-2 bg-indigo-50 text-indigo-600 rounded-xl active:scale-95 transition-transform">
           <span className="text-xs font-bold px-2">Refresh</span>
+        </button>
+      </div>
+
+      {/* SEARCH & FILTER UI */}
+      <div className="mb-6 flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <input 
+            type="text" 
+            placeholder="Search design or color..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm font-medium text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none transition-all shadow-sm"
+          />
+        </div>
+        <button 
+          onClick={() => setHideEmpty(!hideEmpty)}
+          className={`p-3 rounded-xl border flex items-center justify-center transition-all shadow-sm ${hideEmpty ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+          title="Toggle Out of Stock"
+        >
+          <Filter size={20} />
         </button>
       </div>
 
@@ -485,20 +667,20 @@ function ReportPage() {
           </div>
         )}
 
-        {designs.length === 0 && !isLoading && (
+        {filteredDesigns.length === 0 && !isLoading && (
           <div className="p-8 text-center text-slate-400 font-medium bg-white rounded-2xl border border-slate-100">
-            No stock entries found.
+            No designs found matching your search.
           </div>
         )}
 
-        {designs.map((item, idx) => {
+        {filteredDesigns.map((item, idx) => {
           const isExpanded = expandedRows[item.designNo];
           const hasStock = item.totalStock > 0;
 
           return (
             <div key={idx} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden transition-all">
               
-              {/* 1. COMPACT SUMMARY HEADER (Clickable) */}
+              {/* 1. COMPACT SUMMARY HEADER */}
               <div 
                 onClick={() => toggleExpand(item.designNo)}
                 className="p-4 flex items-center justify-between cursor-pointer active:bg-slate-50"
@@ -508,7 +690,6 @@ function ReportPage() {
                     {item.designNo}
                     {isExpanded ? <ChevronUp size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
                   </h3>
-                  {/* Comma-separated colors */}
                   <p className="text-xs font-medium text-slate-400 truncate max-w-[200px]">
                     {item.colors.join(', ')}
                   </p>
@@ -516,17 +697,16 @@ function ReportPage() {
 
                 <div className="text-right">
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold shadow-sm ${hasStock ? 'bg-indigo-100 text-indigo-700' : 'bg-rose-100 text-rose-700'}`}>
-                    Total: {item.totalStock} pkt
+                    Total: {item.totalStock}
                   </span>
                 </div>
               </div>
 
-              {/* 2. EXPANDED DETAIL VIEW */}
+              {/* 2. EXPANDED DETAIL VIEW WITH EDITING */}
               {isExpanded && (
                 <div className="p-4 pt-0 border-t border-slate-100 bg-slate-50/50 animate-in slide-in-from-top-2 duration-200">
                   <div className="flex gap-4 mt-4">
                     
-                    {/* Design Image */}
                     <div className="w-24 h-24 rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm flex-shrink-0 flex items-center justify-center">
                       {item.imageUrl ? (
                         <img src={item.imageUrl} alt={item.designNo} className="w-full h-full object-contain" />
@@ -535,21 +715,59 @@ function ReportPage() {
                       )}
                     </div>
 
-                    {/* Color Variant Breakdown */}
-                    <div className="flex-1">
-                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Variant Stock (₹{item.price})</p>
-                      <div className="space-y-1.5">
-                        {item.variants.map((v: any, vIdx: number) => (
-                          <div key={vIdx} className="flex justify-between items-center text-sm">
-                            <span className="font-medium text-slate-600">{v.color}</span>
-                            <span className={`font-bold ${v.stock > 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
-                              {v.stock}
-                            </span>
-                          </div>
-                        ))}
+                    <div className="flex-1 flex flex-col justify-center">
+                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Variants (₹{item.price})</p>
+                      <div className="space-y-2">
+                        {item.variants.map((v: any, vIdx: number) => {
+                          const isEditing = editingVariant?.designNo === item.designNo && editingVariant?.color === v.color;
+
+                          return (
+                            <div key={vIdx} className="flex justify-between items-center text-sm py-1 border-b border-slate-200/60 last:border-0 pb-1.5 last:pb-0">
+                              <span className="font-medium text-slate-600">{v.color}</span>
+                              
+                              {isEditing ? (
+                                <div className="flex items-center gap-1.5 animate-in fade-in">
+                                  <input 
+                                    type="number" 
+                                    autoFocus
+                                    value={editStockValue}
+                                    onChange={(e) => setEditStockValue(Number(e.target.value))}
+                                    className="w-16 text-center border-2 border-indigo-200 rounded-lg py-0.5 text-sm font-bold text-slate-800 focus:border-indigo-500 outline-none shadow-inner"
+                                  />
+                                  <button 
+                                    onClick={() => handleStockUpdate(item.barcode, v.color, v.stock, editStockValue)}
+                                    className="text-white p-1 bg-emerald-500 hover:bg-emerald-600 rounded-lg shadow-sm"
+                                  >
+                                    <Check size={16} strokeWidth={3} />
+                                  </button>
+                                  <button 
+                                    onClick={() => setEditingVariant(null)}
+                                    className="text-white p-1 bg-slate-400 hover:bg-rose-500 rounded-lg shadow-sm"
+                                  >
+                                    <X size={16} strokeWidth={3} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-3">
+                                  <span className={`font-bold ${v.stock > 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                                    {v.stock}
+                                  </span>
+                                  <button 
+                                    onClick={() => {
+                                      setEditingVariant({ designNo: item.designNo, color: v.color });
+                                      setEditStockValue(v.stock);
+                                    }}
+                                    className="text-slate-400 hover:text-indigo-600 p-1 bg-white rounded-md shadow-sm border border-slate-200"
+                                  >
+                                    <Edit2 size={12} />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-
                   </div>
                 </div>
               )}
@@ -591,21 +809,21 @@ function BottomNav() {
   );
 }
 
-// --- MAIN APP WRAPPER ---
-export default function App() {
-  return (
-    <BrowserRouter>
-      <div className="max-w-md mx-auto bg-slate-50 h-screen flex flex-col relative shadow-2xl overflow-hidden sm:border-x sm:border-slate-200 font-sans selection:bg-indigo-100 selection:text-indigo-900">
-        <div className="flex-1 overflow-y-auto scrollbar-hide">
-          <Routes>
-            <Route path="/" element={<EntryPage />} />
-            <Route path="/generate" element={<BarcodeGeneratePage />} />
-            <Route path="/scan" element={<BarcodeScanPage />} />
-            <Route path="/report" element={<ReportPage />} />
-          </Routes>
-        </div>
-        <BottomNav />
-      </div>
-    </BrowserRouter>
-  );
-}
+// --- MAIN APP WRAPPER --- DELETE
+// export default function App() {
+//   return (
+//     <BrowserRouter>
+//       <div className="max-w-md mx-auto bg-slate-50 h-screen flex flex-col relative shadow-2xl overflow-hidden sm:border-x sm:border-slate-200 font-sans selection:bg-indigo-100 selection:text-indigo-900">
+//         <div className="flex-1 overflow-y-auto scrollbar-hide">
+//           <Routes>
+//             <Route path="/" element={<EntryPage />} />
+//             <Route path="/generate" element={<BarcodeGeneratePage />} />
+//             <Route path="/scan" element={<BarcodeScanPage />} />
+//             <Route path="/report" element={<ReportPage />} />
+//           </Routes>
+//         </div>
+//         <BottomNav />
+//       </div>
+//     </BrowserRouter>
+//   );
+// }

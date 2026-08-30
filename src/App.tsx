@@ -1,108 +1,11 @@
-import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link} from 'react-router-dom';
 import { useState, useEffect, type FormEvent, type ChangeEvent } from 'react';
 //import { PlusCircle, Printer, Maximize, FileText, ScanLine, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 //import { PlusCircle, Printer, Maximize, FileText, ScanLine, ArrowDownToLine, ArrowUpFromLine, ImagePlus, X } from 'lucide-react';
-import { PlusCircle, Printer, Maximize, FileText, ScanLine, ArrowDownToLine, ArrowUpFromLine, ImagePlus, X, ChevronDown, ChevronUp, Search, Filter, Edit2, Check, UserCircle } from 'lucide-react';
+import { PlusCircle, Printer, Maximize, FileText, ScanLine, ArrowDownToLine, ArrowUpFromLine, ImagePlus, X, ChevronDown, ChevronUp, Search, Filter, Edit2, Check, UserCircle, Users, Shield } from 'lucide-react';
 import Barcode from 'react-barcode';
 
 const API_URL = 'https://lace-erp-backend.onrender.com/api/inventory';
-
-// ... (Keep all your other imports and page functions the same)
-
-// --- ADDED: LOGIN PAGE ---
-function LoginPage({ onLogin }: { onLogin: (username: string) => void }) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Simple PIN check for warehouse floor (you can change this to match a real database later)
-    if (username.trim() !== '' && password === '1234') {
-      onLogin(username.trim());
-    } else {
-      setError('Invalid credentials. (Hint: Use PIN 1234)');
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center p-5 animate-in fade-in">
-      <div className="bg-white p-8 rounded-3xl shadow-lg border border-slate-100 w-full max-w-sm">
-        <div className="flex justify-center mb-6">
-          <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center">
-            <UserCircle size={32} />
-          </div>
-        </div>
-        <h2 className="text-2xl font-extrabold text-slate-800 text-center mb-2">Lace ERP</h2>
-        <p className="text-slate-500 text-sm text-center mb-8">Sign in to track floor inventory</p>
-
-        {error && <div className="mb-4 p-3 bg-rose-50 text-rose-600 text-sm rounded-xl text-center font-medium border border-rose-100">{error}</div>}
-
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">User ID</label>
-            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="e.g. Employee Name" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none" required autoFocus />
-          </div>
-          <div>
-            <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Floor PIN</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none" required />
-          </div>
-          <button type="submit" className="w-full bg-indigo-600 active:scale-95 text-white font-bold py-4 rounded-xl shadow-md transition-all mt-4">
-            Login
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-// --- MAIN APP WRAPPER (UPDATED) ---
-export default function App() {
-  const [currentUser, setCurrentUser] = useState(localStorage.getItem('erp_user'));
-
-  const handleLogin = (user: string) => {
-    localStorage.setItem('erp_user', user);
-    setCurrentUser(user);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('erp_user');
-    setCurrentUser(null);
-  };
-
-  if (!currentUser) {
-    return <LoginPage onLogin={handleLogin} />;
-  }
-
-  return (
-    <BrowserRouter>
-      <div className="max-w-md mx-auto bg-slate-50 h-screen flex flex-col relative shadow-2xl overflow-hidden sm:border-x sm:border-slate-200 font-sans selection:bg-indigo-100 selection:text-indigo-900">
-        
-        {/* Added a tiny top bar to show who is logged in and a logout button */}
-        <div className="print:hidden bg-white px-5 py-3 flex justify-between items-center border-b border-slate-200 z-10">
-          <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
-            <UserCircle size={14} className="text-indigo-600" />
-            {currentUser}
-          </span>
-          <button onClick={handleLogout} className="text-slate-400 hover:text-rose-500 active:scale-95 transition-transform p-1">
-             {/* Make sure you imported LogOut from lucide-react */}
-             <span className="text-[10px] font-bold uppercase tracking-wider">Log out</span>
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto scrollbar-hide">
-          <Routes>
-            <Route path="/" element={<EntryPage />} />
-            <Route path="/generate" element={<BarcodeGeneratePage />} />
-            <Route path="/scan" element={<BarcodeScanPage />} />
-            <Route path="/report" element={<ReportPage />} />
-          </Routes>
-        </div>
-        <BottomNav />
-      </div>
-    </BrowserRouter>
-  );
-}
 
 // --- PAGE 1: ENTRY PAGE ---
 function EntryPage() {
@@ -780,34 +683,6 @@ function ReportPage() {
   );
 }
 
-// --- MOBILE BOTTOM NAVIGATION ---
-function BottomNav() {
-  const location = useLocation();
-  const navItems = [
-    { path: '/', icon: <PlusCircle size={22} />, label: 'Entry' },
-    { path: '/generate', icon: <Printer size={22} />, label: 'Labels' },
-    { path: '/scan', icon: <Maximize size={22} />, label: 'Scan' },
-    { path: '/report', icon: <FileText size={22} />, label: 'Ledger' },
-  ];
-
-  return (
-    <nav className="print:hidden absolute bottom-0 w-full bg-white/80 backdrop-blur-lg border-t border-slate-200 flex justify-around items-center h-20 pb-safe z-50 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
-      {navItems.map((item) => {
-        const isActive = location.pathname === item.path;
-        return (
-          <Link key={item.path} to={item.path} className="flex flex-col items-center justify-center w-full h-full relative group">
-            <div className={`p-1.5 rounded-xl transition-all duration-300 ${isActive ? 'text-indigo-600 bg-indigo-50 scale-110' : 'text-slate-400 group-hover:text-slate-600'}`}>
-              {item.icon}
-            </div>
-            <span className={`text-[10px] mt-1 font-bold tracking-wide transition-all ${isActive ? 'text-indigo-600' : 'text-slate-400'}`}>
-              {item.label}
-            </span>
-          </Link>
-        );
-      })}
-    </nav>
-  );
-}
 
 // --- MAIN APP WRAPPER --- DELETE
 // export default function App() {
@@ -827,3 +702,199 @@ function BottomNav() {
 //     </BrowserRouter>
 //   );
 // }
+
+// --- PAGE 5: ADMIN USER MANAGEMENT ---
+function AdminUsersPage() {
+  const [users, setUsers] = useState<any[]>([]);
+  const [formData, setFormData] = useState({ username: '', password: '', role: 'STAFF' });
+  const [status, setStatus] = useState<{message: string, isError: boolean} | null>(null);
+
+  useEffect(() => { fetchUsers(); }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch(`${API_URL}/users`);
+      const data = await res.json();
+      setUsers(data);
+    } catch (err) { console.error(err); }
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`${API_URL}/users`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      if (!res.ok) throw new Error('Username already exists');
+      
+      setStatus({ message: 'User created successfully', isError: false });
+      setFormData({ username: '', password: '', role: 'STAFF' });
+      fetchUsers();
+    } catch (err: any) {
+      setStatus({ message: err.message, isError: true });
+    }
+    setTimeout(() => setStatus(null), 3000);
+  };
+
+  return (
+    <div className="p-5 pb-24 animate-in fade-in h-full flex flex-col">
+      <div className="mb-6">
+        <h2 className="text-2xl font-extrabold text-slate-800 flex items-center gap-2"><Shield size={24} className="text-indigo-600"/> Admin Panel</h2>
+        <p className="text-slate-500 text-sm">Manage staff access and rights.</p>
+      </div>
+
+      {status && (
+        <div className={`mb-4 p-3 text-sm rounded-xl text-center font-bold ${status.isError ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
+          {status.message}
+        </div>
+      )}
+
+      <form onSubmit={handleCreateUser} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 mb-6 space-y-4">
+        <h3 className="font-bold text-slate-700 text-sm border-b pb-2 mb-2">Add New User</h3>
+        <input type="text" placeholder="Username" value={formData.username} onChange={e => setFormData({...formData, username: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" required />
+        <input type="text" placeholder="Password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" required />
+        <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none font-bold">
+          <option value="STAFF">STAFF (Scan & Print)</option>
+          <option value="ADMIN">ADMIN (Full Access)</option>
+        </select>
+        <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-md">Create Account</button>
+      </form>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-slate-50 border-b border-slate-100">
+            <tr><th className="p-4 text-xs font-bold text-slate-500 uppercase">User</th><th className="p-4 text-xs font-bold text-slate-500 uppercase text-right">Role</th></tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {users.map(u => (
+              <tr key={u.UserID}>
+                <td className="p-4 font-bold text-slate-800">{u.Username}</td>
+                <td className="p-4 text-right">
+                  <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${u.Role === 'ADMIN' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600'}`}>{u.Role}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// --- LOGIN PAGE ---
+function LoginPage({ onLogin }: { onLogin: (user: any) => void }) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      if (!res.ok) throw new Error('Invalid credentials');
+      
+      const userData = await res.json();
+      onLogin(userData); // Pass both username and role
+    } catch (err) {
+      setError('Invalid Username or Password');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center p-5 animate-in fade-in">
+      <div className="bg-white p-8 rounded-3xl shadow-lg border border-slate-100 w-full max-w-sm">
+        <div className="flex justify-center mb-6">
+          <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center">
+            <UserCircle size={32} />
+          </div>
+        </div>
+        <h2 className="text-2xl font-extrabold text-slate-800 text-center mb-2">Lace ERP</h2>
+        <p className="text-slate-500 text-sm text-center mb-8">Sign in to track floor inventory</p>
+
+        {error && <div className="mb-4 p-3 bg-rose-50 text-rose-600 text-sm rounded-xl text-center font-medium border border-rose-100">{error}</div>}
+
+        <form onSubmit={handleLogin} className="space-y-4">
+          <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Username" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none" required />
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none" required />
+          <button type="submit" disabled={isLoading} className="w-full bg-indigo-600 text-white font-bold py-4 rounded-xl shadow-md mt-4">
+            {isLoading ? 'Checking...' : 'Login'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// --- MAIN APP WRAPPER ---
+export default function App() {
+  const [currentUser, setCurrentUser] = useState<{username: string, role: string} | null>(
+    localStorage.getItem('erp_user') ? JSON.parse(localStorage.getItem('erp_user')!) : null
+  );
+
+  const handleLogin = (user: {username: string, role: string}) => {
+    localStorage.setItem('erp_user', JSON.stringify(user));
+    setCurrentUser(user);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('erp_user');
+    setCurrentUser(null);
+  };
+
+  if (!currentUser) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
+
+  return (
+    <BrowserRouter>
+      <div className="max-w-md mx-auto bg-slate-50 h-screen flex flex-col relative shadow-2xl overflow-hidden sm:border-x sm:border-slate-200 font-sans">
+        
+        <div className="print:hidden bg-white px-5 py-3 flex justify-between items-center border-b border-slate-200 z-10">
+          <span className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+            <UserCircle size={14} className={currentUser.role === 'ADMIN' ? 'text-rose-500' : 'text-indigo-600'} />
+            {currentUser.username} <span className="opacity-50">({currentUser.role})</span>
+          </span>
+          <button onClick={handleLogout} className="text-slate-400 hover:text-rose-500 text-[10px] font-bold uppercase">Log out</button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto scrollbar-hide pb-20">
+          <Routes>
+            <Route path="/" element={<EntryPage />} />
+            <Route path="/generate" element={<BarcodeGeneratePage />} />
+            <Route path="/scan" element={<BarcodeScanPage />} />
+            <Route path="/report" element={<ReportPage />} />
+            {/* Protect the users route so only Admins can access it */}
+            {currentUser.role === 'ADMIN' && <Route path="/users" element={<AdminUsersPage />} />}
+          </Routes>
+        </div>
+
+        {/* BOTTOM NAV */}
+        <nav className="print:hidden absolute bottom-0 w-full bg-white/80 backdrop-blur-lg border-t border-slate-200 flex justify-around items-center h-20 pb-safe z-50">
+          {[
+            { path: '/', icon: <PlusCircle size={22} />, label: 'Entry' },
+            { path: '/generate', icon: <Printer size={22} />, label: 'Labels' },
+            { path: '/scan', icon: <Maximize size={22} />, label: 'Scan' },
+            { path: '/report', icon: <FileText size={22} />, label: 'Ledger' },
+            // Only show the Users tab if the logged in user is an ADMIN
+            ...(currentUser.role === 'ADMIN' ? [{ path: '/users', icon: <Users size={22} />, label: 'Users' }] : [])
+          ].map((item) => (
+            <Link key={item.path} to={item.path} className="flex flex-col items-center justify-center w-full h-full text-slate-400 hover:text-indigo-600">
+              {item.icon}
+              <span className="text-[10px] mt-1 font-bold">{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+      </div>
+    </BrowserRouter>
+  );
+}

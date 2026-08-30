@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { useState, useEffect, type FormEvent, type ChangeEvent } from 'react';
-import { PlusCircle, Printer, Maximize, FileText, ScanLine, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
+//import { PlusCircle, Printer, Maximize, FileText, ScanLine, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
+//import { PlusCircle, Printer, Maximize, FileText, ScanLine, ArrowDownToLine, ArrowUpFromLine, ImagePlus, X } from 'lucide-react';
+import { PlusCircle, Printer, Maximize, FileText, ScanLine, ArrowDownToLine, ArrowUpFromLine, ImagePlus, X, ChevronDown, ChevronUp } from 'lucide-react';
 import Barcode from 'react-barcode';
 
 const API_URL = 'https://lace-erp-backend.onrender.com/api/inventory';
@@ -13,6 +15,38 @@ function EntryPage() {
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  // Image Upload & Compression Logic
+  const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        // Compress image to 250px width to fit safely inside MySQL TEXT column
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 250;
+        const scaleSize = MAX_WIDTH / img.width;
+        canvas.width = MAX_WIDTH;
+        canvas.height = img.height * scaleSize;
+
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        // Convert to a lightweight JPEG Base64 string
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+        setFormData(prev => ({ ...prev, imageUrl: compressedBase64 }));
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = () => {
+    setFormData(prev => ({ ...prev, imageUrl: '' }));
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -32,7 +66,7 @@ function EntryPage() {
           designNo: formData.designNo.trim(),
           colors: colorArray,
           price: Number(formData.price) || 0,
-          imageUrl: formData.imageUrl.trim()
+          imageUrl: formData.imageUrl // Sends the compressed Base64 string
         })
       });
 
@@ -74,6 +108,35 @@ function EntryPage() {
           </div>
         )}
 
+        {/* IMAGE UPLOAD UI */}
+        <div>
+          <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Design Image</label>
+          
+          {!formData.imageUrl ? (
+            <div className="relative border-2 border-dashed border-slate-200 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors flex flex-col items-center justify-center h-32 cursor-pointer">
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={handleImageUpload} 
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              <ImagePlus className="text-slate-400 mb-2" size={28} />
+              <span className="text-xs font-bold text-slate-500">Tap to upload image</span>
+            </div>
+          ) : (
+            <div className="relative w-full h-48 rounded-xl border border-slate-200 overflow-hidden bg-slate-50">
+              <img src={formData.imageUrl} alt="Preview" className="w-full h-full object-contain" />
+              <button 
+                type="button" 
+                onClick={removeImage}
+                className="absolute top-2 right-2 bg-white/90 backdrop-blur text-rose-500 p-1.5 rounded-full shadow-md active:scale-95"
+              >
+                <X size={18} />
+              </button>
+            </div>
+          )}
+        </div>
+
         <div>
           <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Master Design No</label>
           <input type="text" name="designNo" value={formData.designNo} onChange={handleChange} placeholder="e.g., LACE-503" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all" required />
@@ -103,7 +166,7 @@ function BarcodeGeneratePage() {
   const [designs, setDesigns] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Stores the quantity for each design (e.g., { 'LACE-115': 5 })
+  // Stores the quantity for each design
   const [printCounts, setPrintCounts] = useState<Record<string, number>>({});
   
   // Stores the active print job details
@@ -129,9 +192,7 @@ function BarcodeGeneratePage() {
   };
 
   const handlePrint = (item: any) => {
-    // Get the requested count, default to 1 if empty
     const count = printCounts[item.DesignNo] || 1; 
-    
     if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
     
     setPrintData({ item, count });
@@ -144,7 +205,7 @@ function BarcodeGeneratePage() {
 
   return (
     <>
-      {/* 1. SCREEN VIEW (Hidden during printing) */}
+      {/* 1. SCREEN VIEW (Hidden entirely during print) */}
       <div className="print:hidden p-5 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-500 h-full flex flex-col">
         <div className="mb-6 flex justify-between items-end">
           <div>
@@ -172,7 +233,6 @@ function BarcodeGeneratePage() {
                 </p>
               </div>
               
-              {/* ADDED: Quantity Input Box & Print Button Group */}
               <div className="flex items-center gap-2">
                 <input 
                   type="number" 
@@ -185,59 +245,52 @@ function BarcodeGeneratePage() {
                   <Printer size={20} />
                 </button>
               </div>
-
             </div>
           ))}
         </div>
       </div>
 
-      {/* 2. PRINT ONLY VIEW (Handles multiple labels & page breaks perfectly) */}
+      {/* 2. PRINT ONLY VIEW */}
       {printData && (
         <>
           <style type="text/css" media="print">
             {`
               @page { size: 50mm 15mm; margin: 0; }
+              /* Force app wrappers to allow pagination so count works */
               html, body, #root { 
-                margin: 0 !important; 
-                padding: 0 !important; 
+                height: auto !important; 
+                min-height: 0 !important;
+                overflow: visible !important; 
                 background: white !important;
               }
-              /* Forcefully remove all scrollbars */
-              ::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
-              * { scrollbar-width: none !important; box-sizing: border-box !important; }
+              * { overflow: visible !important; }
+              ::-webkit-scrollbar { display: none !important; }
             `}
           </style>
 
-          {/* This container replaces the screen view during print */}
           <div className="hidden print:block w-full bg-white">
-            
-            {/* Loop X times based on the requested count */}
             {Array.from({ length: printData.count }).map((_, i) => (
-              
               <div 
                 key={i} 
-                className="flex flex-col items-center bg-white" 
+                className="flex flex-col items-center justify-center bg-white" 
                 style={{ 
                   width: '50mm', 
                   height: '15mm', 
                   padding: '1mm',
-                  overflow: 'hidden',
-                  pageBreakAfter: 'always', // Tells the printer to cut/feed after this label
+                  pageBreakAfter: 'always', 
                   breakAfter: 'page'
                 }}
               >
-                {/* Header: Design No & Price */}
                 <div className="w-full flex justify-between items-center font-bold" style={{ fontSize: '10px', padding: '0 2mm' }}>
                   <span>{printData.item.DesignNo}</span>
                   <span>₹{printData.item.Price}</span>
                 </div>
                 
-                {/* CENTERED BARCODE */}
                 <div className="w-full flex-1 flex justify-center items-center">
                   <Barcode 
                     value={printData.item.Barcode} 
                     format="CODE128" 
-                    width={1.2}           
+                    width={1.0}           
                     height={24}         
                     displayValue={true} 
                     fontSize={11}        
@@ -246,7 +299,6 @@ function BarcodeGeneratePage() {
                   />
                 </div>
               </div>
-
             ))}
           </div>
         </>
@@ -372,6 +424,7 @@ function BarcodeScanPage() {
 function ReportPage() {
   const [reportData, setReportData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
   useEffect(() => { fetchReport(); }, []);
 
@@ -388,6 +441,31 @@ function ReportPage() {
     }
   };
 
+  const toggleExpand = (designNo: string) => {
+    setExpandedRows(prev => ({ ...prev, [designNo]: !prev[designNo] }));
+  };
+
+  // Group the flat SQL data into structured objects by Design No
+  const groupedLedger = reportData.reduce((acc, curr) => {
+    if (!acc[curr.designNo]) {
+      acc[curr.designNo] = {
+        designNo: curr.designNo,
+        price: curr.price,
+        imageUrl: curr.imageUrl,
+        totalStock: 0,
+        colors: [],
+        variants: []
+      };
+    }
+    const stockNum = Number(curr.currentStock);
+    acc[curr.designNo].totalStock += stockNum;
+    acc[curr.designNo].colors.push(curr.color);
+    acc[curr.designNo].variants.push({ color: curr.color, stock: stockNum });
+    return acc;
+  }, {});
+
+  const designs = Object.values(groupedLedger) as any[];
+
   return (
     <div className="p-5 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-500 h-full flex flex-col">
       <div className="mb-6 flex justify-between items-end">
@@ -400,37 +478,85 @@ function ReportPage() {
         </button>
       </div>
 
-      <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex-1 relative">
+      <div className="flex-1 overflow-y-auto space-y-4 scrollbar-hide">
         {isLoading && (
-          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10">
+          <div className="absolute inset-0 bg-slate-50/80 backdrop-blur-sm flex items-center justify-center z-10 rounded-3xl">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
           </div>
         )}
-        <div className="overflow-y-auto h-full scrollbar-hide">
-          <table className="w-full text-left text-sm relative">
-            <thead className="bg-slate-50/90 backdrop-blur-md border-b border-slate-100 sticky top-0 z-0">
-              <tr>
-                <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Variant</th>
-                <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Stock</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {reportData.map((item, idx) => (
-                <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                  <td className="p-4">
-                    <p className="font-bold text-slate-800">{item.designNo}</p>
-                    <p className="text-xs text-slate-400">{item.color} • ₹{item.price}</p>
-                  </td>
-                  <td className="p-4 text-right">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${Number(item.currentStock) > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
-                      {item.currentStock} pkt
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+
+        {designs.length === 0 && !isLoading && (
+          <div className="p-8 text-center text-slate-400 font-medium bg-white rounded-2xl border border-slate-100">
+            No stock entries found.
+          </div>
+        )}
+
+        {designs.map((item, idx) => {
+          const isExpanded = expandedRows[item.designNo];
+          const hasStock = item.totalStock > 0;
+
+          return (
+            <div key={idx} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden transition-all">
+              
+              {/* 1. COMPACT SUMMARY HEADER (Clickable) */}
+              <div 
+                onClick={() => toggleExpand(item.designNo)}
+                className="p-4 flex items-center justify-between cursor-pointer active:bg-slate-50"
+              >
+                <div className="flex-1">
+                  <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+                    {item.designNo}
+                    {isExpanded ? <ChevronUp size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
+                  </h3>
+                  {/* Comma-separated colors */}
+                  <p className="text-xs font-medium text-slate-400 truncate max-w-[200px]">
+                    {item.colors.join(', ')}
+                  </p>
+                </div>
+
+                <div className="text-right">
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold shadow-sm ${hasStock ? 'bg-indigo-100 text-indigo-700' : 'bg-rose-100 text-rose-700'}`}>
+                    Total: {item.totalStock} pkt
+                  </span>
+                </div>
+              </div>
+
+              {/* 2. EXPANDED DETAIL VIEW */}
+              {isExpanded && (
+                <div className="p-4 pt-0 border-t border-slate-100 bg-slate-50/50 animate-in slide-in-from-top-2 duration-200">
+                  <div className="flex gap-4 mt-4">
+                    
+                    {/* Design Image */}
+                    <div className="w-24 h-24 rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm flex-shrink-0 flex items-center justify-center">
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} alt={item.designNo} className="w-full h-full object-contain" />
+                      ) : (
+                        <span className="text-[10px] text-slate-400 font-bold uppercase text-center p-2">No Image</span>
+                      )}
+                    </div>
+
+                    {/* Color Variant Breakdown */}
+                    <div className="flex-1">
+                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Variant Stock (₹{item.price})</p>
+                      <div className="space-y-1.5">
+                        {item.variants.map((v: any, vIdx: number) => (
+                          <div key={vIdx} className="flex justify-between items-center text-sm">
+                            <span className="font-medium text-slate-600">{v.color}</span>
+                            <span className={`font-bold ${v.stock > 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                              {v.stock}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              )}
+              
+            </div>
+          );
+        })}
       </div>
     </div>
   );
